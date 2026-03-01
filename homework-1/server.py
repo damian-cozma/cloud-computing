@@ -1,6 +1,6 @@
 import http.server
 import json
-import socketserver
+import re
 from logic.games_service import read_games, read_game_by_id
 
 PORT = 9002
@@ -13,30 +13,28 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(bytes(json.dumps(data), "utf-8"))
 
     def do_GET(self):
-        game_id = None
         # -------------- GET ALL GAMES --------------
-        if self.path == "/api/games":
+        if re.fullmatch(r"/api/games/?", self.path):
             games = read_games()
             self._send_json(games)
+            return
 
         # -------------- GET GAME BY ID --------------
-        elif self.path.startswith("/api/games/"):
-            try:
-                game_id = int(self.path.split("/")[3])
-            except (IndexError, ValueError):
-                self._send_json({"error": "Invalid game id"}, status=400)
-                return
-
+        match_game = re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path)
+        if match_game:
+            game_id = int(match_game.group("id"))
             game = read_game_by_id(game_id)
-            if game is not None:
+
+            if game:
                 self._send_json(game)
             else:
-                self._send_json({"error": "game not found"}, status=404)
+                self._send_json({"error": "Game not found"}, status=404)
 
         # -------------- UNKNOWN ENDPOINT --------------
         else:
             self._send_json({"error": "Not found"}, status=404)
 
-with http.server.HTTPServer(("", PORT), CustomHandler) as httpd:
-    print("serving at port", PORT)
-    httpd.serve_forever()
+if __name__ == "__main__":
+    with http.server.HTTPServer(("", PORT), CustomHandler) as httpd:
+        print("serving at port", PORT)
+        httpd.serve_forever()
