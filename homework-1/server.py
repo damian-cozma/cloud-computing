@@ -1,7 +1,7 @@
 import http.server
-import json
 import re
-from logic.games_service import read_games, read_game_by_id
+import json
+from logic.games_service import *
 
 PORT = 9002
 
@@ -11,6 +11,13 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-type", "application/json")
         self.end_headers()
         self.wfile.write(bytes(json.dumps(data), "utf-8"))
+
+    def _read_json(self):
+        bytes_length = int(self.headers.get("Content-Length"))
+        body_string = self.rfile.read(bytes_length).decode("utf-8")
+        body_dict = json.loads(body_string)
+
+        return body_dict
 
     def do_GET(self):
         # -------------- GET ALL GAMES --------------
@@ -27,8 +34,26 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
 
             if game:
                 self._send_json(game)
+                return
             else:
                 self._send_json({"error": "Game not found"}, status=404)
+                return
+
+        # -------------- UNKNOWN ENDPOINT --------------
+        else:
+            self._send_json({"error": "Not found"}, status=404)
+            return
+
+    def do_POST(self):
+        # -------------- ADD A NEW GAME --------------
+        if re.fullmatch("/api/games/?", self.path):
+            game_data = self._read_json()
+            new_game = create_game(game_data)
+            self._send_json(new_game, status=201)
+
+        # -------------- METHOD NOT ALLOWED --------------
+        elif re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path):
+            self._send_json({"error": "Method Not Allowed"}, status=405)
 
         # -------------- UNKNOWN ENDPOINT --------------
         else:

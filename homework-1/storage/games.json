@@ -1,4 +1,22 @@
 [
-  {"id": 1, "title": "Hollow Knight", "platform": "PC"},
-  {"id": 2, "title": "Celeste", "platform": "Switch"}
+    {
+        "id": 1,
+        "title": "Hollow Knight",
+        "platform": "PC"
+    },
+    {
+        "id": 2,
+        "title": "Celeste",
+        "platform": "Switch"
+    },
+    {
+        "id": 3,
+        "title": "The Last of Us",
+        "platform": "Playstation"
+    },
+    {
+        "id": 4,
+        "title": "Detroit: Become Human",
+        "platform": "Playstation"
+    }
 ]
