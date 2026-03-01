@@ -22,7 +22,7 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         # -------------- GET ALL GAMES --------------
         if re.fullmatch(r"/api/games/?", self.path):
-            games = read_games()
+            games = get_all_games()
             self._send_json(games)
             return
 
@@ -30,7 +30,7 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
         match_game = re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path)
         if match_game:
             game_id = int(match_game.group("id"))
-            game = find_game_by_id(game_id)
+            game = get_game_by_id(game_id)
 
             if game:
                 self._send_json(game)
@@ -85,9 +85,9 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
         match_game = re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path)
         if match_game:
             game_id = int(match_game.group("id"))
-            delete = delete_game(game_id)
+            is_deleted = delete_game(game_id)
 
-            if delete:
+            if is_deleted:
                 self._send_json({"message": "Game Deleted Successfully"}, status=200)
                 return
             else:

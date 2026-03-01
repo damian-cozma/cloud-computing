@@ -2,22 +2,22 @@ import json
 
 GAMES_FILE = "storage/games.json"
 
-def read_games():
+def get_all_games():
     try:
         with open(GAMES_FILE, "r") as f:
             return json.load(f)
     except FileNotFoundError:
         return []
 
-def find_game_by_id(game_id):
-    games = read_games()
+def get_game_by_id(game_id):
+    games = get_all_games()
     for game in games:
         if game["id"] == game_id:
             return game
     return None
 
 def create_game(game_data):
-    games = read_games()
+    games = get_all_games()
     if games:
         last_game = games[-1]
         current_id = last_game["id"] + 1
@@ -37,7 +37,7 @@ def create_game(game_data):
     return new_game
 
 def delete_game(game_id):
-    games = read_games()
+    games = get_all_games()
 
     updated_list = list(filter(lambda game: game["id"] != game_id, games))
 
@@ -49,7 +49,7 @@ def delete_game(game_id):
         return False
 
 def update_game(game_id, new_data):
-    games = read_games()
+    games = get_all_games()
 
     for i, game in enumerate(games):
         if game["id"] == game_id:
