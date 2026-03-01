@@ -9,7 +9,7 @@ def read_games():
     except FileNotFoundError:
         return []
 
-def read_game_by_id(game_id):
+def find_game_by_id(game_id):
     games = read_games()
     for game in games:
         if game["id"] == game_id:
@@ -47,3 +47,20 @@ def delete_game(game_id):
             return True
     else:
         return False
+
+def update_game(game_id, new_data):
+    games = read_games()
+
+    for i, game in enumerate(games):
+        if game["id"] == game_id:
+            games[i] = {
+                "id": game_id,
+                **new_data
+            }
+
+            with open(GAMES_FILE, "w") as f:
+                json.dump(games, f, indent=4)
+
+            return games[i]
+
+    return None
