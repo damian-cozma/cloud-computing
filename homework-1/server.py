@@ -46,7 +46,7 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         # -------------- ADD A NEW GAME --------------
-        if re.fullmatch("/api/games/?", self.path):
+        if re.fullmatch("r/api/games/?", self.path):
             game_data = self._read_json()
             new_game = create_game(game_data)
             self._send_json(new_game, status=201)
@@ -58,6 +58,25 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
         # -------------- UNKNOWN ENDPOINT --------------
         else:
             self._send_json({"error": "Not found"}, status=404)
+
+    def do_DELETE(self):
+        # -------------- DELETE GAME BY ID --------------
+        match_game = re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path)
+        if match_game:
+            game_id = int(match_game.group("id"))
+            delete = delete_game(game_id)
+
+            if delete:
+                self._send_json({"message": "Game deleted successfully"}, status=200)
+                return
+            else:
+                self._send_json({"error": "Game not found"}, status=404)
+                return
+
+        # -------------- UNKNOWN ENDPOINT --------------
+        else:
+            self._send_json({"error": "Not found"}, status=404)
+            return
 
 if __name__ == "__main__":
     with http.server.HTTPServer(("", PORT), CustomHandler) as httpd:

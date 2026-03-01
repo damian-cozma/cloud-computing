@@ -35,3 +35,15 @@ def create_game(game_data):
         json.dump(games, f, indent=4)
 
     return new_game
+
+def delete_game(game_id):
+    games = read_games()
+
+    updated_list = list(filter(lambda game: game["id"] != game_id, games))
+
+    if len(updated_list) != len(games):
+        with open(GAMES_FILE, "w") as f:
+            json.dump(updated_list, f, indent=4)
+            return True
+    else:
+        return False
