@@ -64,3 +64,32 @@ def update_game(game_id, new_data):
             return games[i]
 
     return None
+
+# ----------------- VALIDATION -----------------
+
+def validate_game_data(data):
+    if not isinstance(data, dict):
+        return False, "Payload must be a JSON object."
+
+    allowed_fields = ["title", "platform"]
+
+    for key in data.keys():
+        if key not in allowed_fields:
+            return False, f"Unexpected field: '{key}'"
+
+    for field in allowed_fields:
+        if field not in data:
+            return False, f"Missing required field: '{field}'."
+
+        if not isinstance(data[field], str) or not data[field].strip():
+            return False, f"Field '{field}' must be a non-empty string."
+
+    return True, None
+
+def is_duplicate_game(title, platform):
+    games = get_all_games()
+    for game in games:
+        if game["title"].lower() == title.lower() and game["platform"].lower() == platform.lower():
+            return True
+
+    return False

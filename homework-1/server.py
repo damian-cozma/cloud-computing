@@ -1,6 +1,6 @@
 import http.server
 import re
-import json
+
 from logic.games_service import *
 
 PORT = 9002
@@ -13,11 +13,16 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(bytes(json.dumps(data), "utf-8"))
 
     def _read_json(self):
-        bytes_length = int(self.headers.get("Content-Length"))
-        body_string = self.rfile.read(bytes_length).decode("utf-8")
-        body_dict = json.loads(body_string)
+        try:
+            bytes_length = int(self.headers.get("Content-Length"))
+            if bytes_length == 0:
+                return None
 
-        return body_dict
+            body_string = self.rfile.read(bytes_length).decode("utf-8")
+            body_dict = json.loads(body_string)
+            return body_dict
+        except json.JSONDecodeError:
+            return None
 
     def do_GET(self):
         # -------------- GET ALL GAMES --------------
@@ -48,6 +53,16 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
         # -------------- ADD A NEW GAME --------------
         if re.fullmatch(r"/api/games/?", self.path):
             game_data = self._read_json()
+
+            is_valid, error_message = validate_game_data(game_data)
+            if not is_valid:
+                self._send_json({"error": error_message}, status=400)
+                return
+
+            if is_duplicate_game(game_data["title"], game_data["platform"]):
+                self._send_json({"error": "Game already exists on this platform."}, status=409)
+                return
+
             new_game = create_game(game_data)
             self._send_json(new_game, status=201)
 
@@ -65,6 +80,15 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
         if match_game:
             game_id = int(match_game.group("id"))
             game_data = self._read_json()
+
+            is_valid, error_message = validate_game_data(game_data)
+            if not is_valid:
+                self._send_json({"error": error_message}, status=400)
+                return
+
+            if is_duplicate_game(game_data["title"], game_data["platform"]):
+                self._send_json({"error": "Game already exists on this platform."}, status=409)
+                return
 
             updated_game = update_game(game_id, game_data)
 
