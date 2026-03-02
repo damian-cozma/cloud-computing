@@ -6,12 +6,17 @@
     },
     {
         "id": 2,
-        "title": "Celeste",
-        "platform": "Switch"
+        "title": "Detroit: Become Human",
+        "platform": "Playstation"
     },
     {
         "id": 3,
-        "title": "Detroit: Become Human",
+        "title": "The Last of Us",
         "platform": "Playstation"
+    },
+    {
+        "id": 4,
+        "title": "The Last of Us",
+        "platform": "PC"
     }
 ]
