@@ -2,17 +2,51 @@
     {
         "id": 1,
         "game_id": 1,
-        "rating": 10,
-        "text": "Amazing!"
+        "text": "One of the best games ever. The graphics are ok, but the mechanics are immaculate. I won't even mention the story and the sound design! Totally recommend it!",
+        "graphics": 7,
+        "mechanics": 10,
+        "story": 10,
+        "sound": 10,
+        "rating": 9.25
     },
     {
         "id": 2,
         "game_id": 2,
-        "text": "Amazing",
+        "text": "An absolute masterpiece of storytelling. The emotional weight is incredible and the sound design makes every encounter terrifying.",
         "graphics": 10,
-        "mechanics": 7,
-        "story": 9,
+        "mechanics": 8,
+        "story": 10,
         "sound": 10,
-        "rating": 7.2
+        "rating": 9.5
+    },
+    {
+        "id": 3,
+        "game_id": 3,
+        "text": "The atmosphere and world-building are top notch. Combat is precise and rewarding.",
+        "graphics": 9,
+        "mechanics": 10,
+        "story": 8,
+        "sound": 10,
+        "rating": 9.25
+    },
+    {
+        "id": 4,
+        "game_id": 4,
+        "text": "I can see why people love it, but it's just too punishing for me. The gothic art style is beautiful though.",
+        "graphics": 9,
+        "mechanics": 9,
+        "story": 7,
+        "sound": 8,
+        "rating": 8.25
+    },
+    {
+        "id": 5,
+        "game_id": 5,
+        "text": "Redefined open world exploration. Losing yourself in this world is magical.",
+        "graphics": 8,
+        "mechanics": 10,
+        "story": 9,
+        "sound": 9,
+        "rating": 9.0
     }
 ]
