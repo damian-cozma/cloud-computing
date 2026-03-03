@@ -3,6 +3,7 @@ import re
 
 from logic.games_service import *
 from logic.reviews_service import *
+from logic.analytics_service import *
 
 PORT = 9002
 
@@ -64,6 +65,26 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
                 self._send_json(review, status=200)
             else:
                 self._send_json({"message": "You haven't reviewed this game yet."}, status=404)
+            return
+
+        # -------------- GET LEADERBOARD --------------
+        elif re.fullmatch(r"/api/leaderboard/?", self.path):
+            leaderboard_data = get_leaderboard()
+
+            if leaderboard_data:
+                self._send_json(leaderboard_data, status=200)
+            else:
+                self._send_json({"error": "You haven't added games to your library."}, status=404)
+            return
+
+        # -------------- GET STATISTICS --------------
+        elif re.fullmatch(r"/api/statistics/?", self.path):
+            statistics_data = get_statistics()
+
+            if statistics_data:
+                self._send_json(statistics_data, status=200)
+            else:
+                self._send_json({"error": "No data available for statistics."}, status=404)
             return
 
         # -------------- UNKNOWN ENDPOINT --------------
