@@ -1,4 +1,5 @@
 import json
+from .reviews_service import delete_review
 
 GAMES_FILE = "storage/games.json"
 
@@ -39,6 +40,7 @@ def create_game(game_data):
 def delete_game(game_id):
     games = get_all_games()
 
+    delete_review(game_id)
     updated_list = list(filter(lambda game: game["id"] != game_id, games))
 
     if len(updated_list) != len(games):
@@ -48,14 +50,14 @@ def delete_game(game_id):
     else:
         return False
 
-def update_game(game_id, new_data):
+def update_game(game_id, game_data):
     games = get_all_games()
 
     for i, game in enumerate(games):
         if game["id"] == game_id:
             games[i] = {
                 "id": game_id,
-                **new_data
+                **game_data
             }
 
             with open(GAMES_FILE, "w") as f:

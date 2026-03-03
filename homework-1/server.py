@@ -2,6 +2,7 @@ import http.server
 import re
 
 from logic.games_service import *
+from logic.reviews_service import *
 
 PORT = 9002
 
@@ -32,17 +33,38 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
             return
 
         # -------------- GET GAME BY ID --------------
-        match_game = re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path)
-        if match_game:
+        elif match_game := re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path):
             game_id = int(match_game.group("id"))
             game = get_game_by_id(game_id)
 
             if game:
                 self._send_json(game)
-                return
             else:
                 self._send_json({"error": "Game Not Found"}, status=404)
+            return
+
+        # -------------- GET ALL REVIEWS --------------
+        elif re.fullmatch(r"/api/games/reviews/?", self.path):
+            reviews = get_all_reviews()
+            self._send_json(reviews)
+            return
+
+        # -------------- GET REVIEW BY GAME ID --------------
+        elif match_review := re.fullmatch(r"/api/games/(?P<id>\d+)/review/?", self.path):
+            game_id = int(match_review.group("id"))
+            game = get_game_by_id(game_id)
+
+            if not game:
+                self._send_json({"error": "Game Not Found"}, status=404)
                 return
+
+            review = get_review_for_game(game_id)
+
+            if review:
+                self._send_json(review, status=200)
+            else:
+                self._send_json({"message": "You haven't reviewed this game yet."}, status=404)
+            return
 
         # -------------- UNKNOWN ENDPOINT --------------
         else:
@@ -70,14 +92,36 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
         elif re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path):
             self._send_json({"error": "Method Not Allowed"}, status=405)
 
+        # -------------- ADD A NEW REVIEW --------------
+        elif match_game := re.fullmatch(r"/api/games/(?P<id>\d+)/review/?", self.path):
+            game_id = int(match_game.group("id"))
+
+            if not get_game_by_id(game_id):
+                self._send_json({"error": "Game Not Found"}, status=404)
+                return
+
+            review_data = self._read_json()
+            is_valid, error_message = validate_review_data(review_data)
+            if not is_valid:
+                self._send_json({"error": error_message}, status=400)
+                return
+
+            if is_duplicate_review(game_id):
+                self._send_json({"error": "Review already exists for this game."}, status=409)
+                return
+
+            new_review = create_review(game_id, review_data)
+            self._send_json(new_review, status=201)
+            return
+
         # -------------- UNKNOWN ENDPOINT --------------
         else:
             self._send_json({"error": "Not found"}, status=404)
+            return
 
     def do_PUT(self):
         # -------------- UPDATE A GAME --------------
-        match_game = re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path)
-        if match_game:
+        if match_game := re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path):
             game_id = int(match_game.group("id"))
             game_data = self._read_json()
 
@@ -86,18 +130,34 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
                 self._send_json({"error": error_message}, status=400)
                 return
 
-            if is_duplicate_game(game_data["title"], game_data["platform"]):
-                self._send_json({"error": "Game already exists on this platform."}, status=409)
-                return
-
             updated_game = update_game(game_id, game_data)
 
             if updated_game:
                 self._send_json(updated_game, status=200)
-                return
             else:
                 self._send_json({"error": "Game Not Found"}, status=404)
+            return
+
+        elif match_review := re.fullmatch(r"/api/games/(?P<id>\d+)/review/?", self.path):
+            game_id = int(match_review.group("id"))
+
+            if not get_game_by_id(game_id):
+                self._send_json({"error": "Game Not Found"}, status=404)
                 return
+
+            review_data = self._read_json()
+            is_valid, error_message = validate_review_data(review_data)
+            if not is_valid:
+                self._send_json({"error": error_message}, status=400)
+                return
+
+            updated_review = update_review(game_id, review_data)
+
+            if updated_review:
+                self._send_json(updated_review, status=200)
+            else:
+                self._send_json({"error": "Review not found for this game."}, status=404)
+            return
 
         # -------------- UNKNOWN ENDPOINT --------------
         else:
@@ -106,17 +166,31 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         # -------------- DELETE GAME BY ID --------------
-        match_game = re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path)
-        if match_game:
+        if match_game := re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path):
             game_id = int(match_game.group("id"))
             is_deleted = delete_game(game_id)
 
             if is_deleted:
                 self._send_json({"message": "Game Deleted Successfully"}, status=200)
-                return
             else:
                 self._send_json({"error": "Game Not Found"}, status=404)
+            return
+
+        # -------------- DELETE REVIEW BY ID --------------
+        elif match_review := re.fullmatch(r"/api/games/(?P<id>\d+)/review/?", self.path):
+            game_id = int(match_review.group("id"))
+
+            if not get_game_by_id(game_id):
+                self._send_json({"error": "Game Not Found"}, status=404)
                 return
+
+            is_deleted = delete_review(game_id)
+
+            if is_deleted:
+                self._send_json({"message": "Review Deleted Successfully"}, status=200)
+            else:
+                self._send_json({"error": "Review Not Found for this game"}, status=404)
+            return
 
         # -------------- UNKNOWN ENDPOINT --------------
         else:
