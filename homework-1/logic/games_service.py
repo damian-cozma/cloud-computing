@@ -73,7 +73,7 @@ def validate_game_data(data):
     if not isinstance(data, dict):
         return False, "Payload must be a JSON object."
 
-    allowed_fields = ["title", "platform"]
+    allowed_fields = ["title", "platform", "progress"]
 
     for key in data.keys():
         if key not in allowed_fields:
@@ -85,6 +85,11 @@ def validate_game_data(data):
 
         if not isinstance(data[field], str) or not data[field].strip():
             return False, f"Field '{field}' must be a non-empty string."
+
+    valid_progress_statuses = ["Playing", "Completed", "Abandoned"]
+
+    if data["progress"] not in valid_progress_statuses:
+        return False, f"Field 'progress' must be one of: {', '.join(valid_progress_statuses)}."
 
     return True, None
 

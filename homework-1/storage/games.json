@@ -8,5 +8,11 @@
         "id": 2,
         "title": "Detroit: Become Human",
         "platform": "Playstation"
+    },
+    {
+        "id": 3,
+        "title": "The Last of Us",
+        "platform": "Playstation",
+        "progress": "Completed"
     }
 ]
