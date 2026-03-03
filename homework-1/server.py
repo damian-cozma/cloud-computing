@@ -1,5 +1,6 @@
 import http.server
 import re
+from urllib.parse import urlparse, parse_qs
 
 from logic.games_service import *
 from logic.reviews_service import *
@@ -27,14 +28,18 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
             return None
 
     def do_GET(self):
+        parsed_url = urlparse(self.path)
+        clean_path = parsed_url.path
+        query_params = parse_qs(parsed_url.query)
+
         # -------------- GET ALL GAMES --------------
-        if re.fullmatch(r"/api/games/?", self.path):
+        if re.fullmatch(r"/api/games/?", clean_path):
             games = get_all_games()
             self._send_json(games)
             return
 
         # -------------- GET GAME BY ID --------------
-        elif match_game := re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path):
+        elif match_game := re.fullmatch(r"/api/games/(?P<id>\d+)/?", clean_path):
             game_id = int(match_game.group("id"))
             game = get_game_by_id(game_id)
 
@@ -45,13 +50,13 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
             return
 
         # -------------- GET ALL REVIEWS --------------
-        elif re.fullmatch(r"/api/games/reviews/?", self.path):
+        elif re.fullmatch(r"/api/games/reviews/?", clean_path):
             reviews = get_all_reviews()
             self._send_json(reviews)
             return
 
         # -------------- GET REVIEW BY GAME ID --------------
-        elif match_review := re.fullmatch(r"/api/games/(?P<id>\d+)/review/?", self.path):
+        elif match_review := re.fullmatch(r"/api/games/(?P<id>\d+)/review/?", clean_path):
             game_id = int(match_review.group("id"))
             game = get_game_by_id(game_id)
 
@@ -68,8 +73,11 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
             return
 
         # -------------- GET LEADERBOARD --------------
-        elif re.fullmatch(r"/api/leaderboard/?", self.path):
-            leaderboard_data = get_leaderboard()
+        elif re.fullmatch(r"/api/leaderboard/?", clean_path):
+            platform_val = query_params.get("platform", [None])[0]
+            sort_val = query_params.get("sort", ["desc"])[0]
+
+            leaderboard_data = get_leaderboard(platform_val, sort_val)
 
             if leaderboard_data:
                 self._send_json(leaderboard_data, status=200)
@@ -78,7 +86,7 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
             return
 
         # -------------- GET STATISTICS --------------
-        elif re.fullmatch(r"/api/statistics/?", self.path):
+        elif re.fullmatch(r"/api/statistics/?", clean_path):
             statistics_data = get_statistics()
 
             if statistics_data:

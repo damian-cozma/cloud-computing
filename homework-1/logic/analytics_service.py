@@ -2,7 +2,7 @@ from .games_service import get_all_games
 from .reviews_service import get_all_reviews
 
 
-def get_leaderboard():
+def get_leaderboard(platform_filter=None, sort_order="desc"):
     games = get_all_games()
     reviews = get_all_reviews()
 
@@ -25,7 +25,11 @@ def get_leaderboard():
 
         leaderboard.append(item)
 
-    leaderboard.sort(key=lambda x: x["rating"], reverse=True)
+    if platform_filter:
+        leaderboard = [item for item in leaderboard if item["platform"].lower() == platform_filter.lower()]
+
+    is_reverse = True if sort_order.lower() == "desc" else False
+    leaderboard.sort(key=lambda x: x["rating"], reverse=is_reverse)
 
     return leaderboard
 
