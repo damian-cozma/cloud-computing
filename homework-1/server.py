@@ -82,7 +82,7 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
             if leaderboard_data:
                 self._send_json(leaderboard_data, status=200)
             else:
-                self._send_json({"error": "You haven't added games to your library."}, status=404)
+                self._send_json({"error": "You haven't added games to your library or specified criteria doesn't match."}, status=404)
             return
 
         # -------------- GET STATISTICS --------------
