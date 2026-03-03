@@ -28,7 +28,7 @@ def create_review(game_id, review_data):
 
     score_fields = ["graphics", "mechanics", "story", "sound"]
     total_score = sum(review_data[field] for field in score_fields)
-    average_score = round(total_score / len(review_data), 2)
+    average_score = round(total_score / 4, 2)
 
     new_review = {
         "id": current_id,
@@ -51,7 +51,7 @@ def update_review(game_id, review_data):
         if review["game_id"] == game_id:
             score_fields = ["graphics", "mechanics", "story", "sound"]
             total_score = sum(review_data[field] for field in score_fields)
-            average_score = round(total_score / len(review_data), 2)
+            average_score = round(total_score / 4, 2)
 
             reviews[i] = {
                 "id": review["id"],
