@@ -1,6 +1,5 @@
 import http.server
 import re
-import json
 from urllib.parse import urlparse, parse_qs
 
 from logic.games_service import *
