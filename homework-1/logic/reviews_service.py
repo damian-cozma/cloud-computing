@@ -26,10 +26,15 @@ def create_review(game_id, review_data):
     else:
         current_id = 1
 
+    score_fields = ["graphics", "mechanics", "story", "sound"]
+    total_score = sum(review_data[field] for field in score_fields)
+    average_score = round(total_score / len(review_data), 2)
+
     new_review = {
         "id": current_id,
         "game_id": game_id,
-        **review_data
+        **review_data,
+        "rating": average_score
     }
 
     reviews.append(new_review)
@@ -44,10 +49,15 @@ def update_review(game_id, review_data):
 
     for i, review in enumerate(reviews):
         if review["game_id"] == game_id:
+            score_fields = ["graphics", "mechanics", "story", "sound"]
+            total_score = sum(review_data[field] for field in score_fields)
+            average_score = round(total_score / len(review_data), 2)
+
             reviews[i] = {
                 "id": review["id"],
                 "game_id": game_id,
-                **review_data
+                **review_data,
+                "rating": average_score
             }
 
             with open(REVIEWS_FILE, "w") as f:
@@ -74,7 +84,7 @@ def validate_review_data(data):
     if not isinstance(data, dict):
         return False, "Payload must be a JSON object."
 
-    allowed_fields = ["rating", "text"]
+    allowed_fields = ["text", "graphics", "mechanics", "story", "sound"]
 
     for key in data.keys():
         if key not in allowed_fields:
@@ -84,8 +94,10 @@ def validate_review_data(data):
         if field not in data:
             return False, f"Missing required field: '{field}'."
 
-    if not isinstance(data["rating"], int) or not (1 <= data["rating"] <= 10):
-        return False, "Field 'rating' must be an integer between 1 and 10."
+    rating_fields = ["graphics", "mechanics", "story", "sound"]
+    for field in rating_fields:
+        if not isinstance(data[field], int) or not (1 <= data[field] <= 10):
+            return False, f"Field {field} must be an integer between 1 and 10."
 
     if not isinstance(data["text"], str) or not data["text"].strip():
         return False, "Field 'text' must be a non-empty string."

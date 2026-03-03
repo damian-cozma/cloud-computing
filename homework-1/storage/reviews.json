@@ -4,5 +4,15 @@
         "game_id": 1,
         "rating": 10,
         "text": "Amazing!"
+    },
+    {
+        "id": 2,
+        "game_id": 2,
+        "text": "Amazing",
+        "graphics": 10,
+        "mechanics": 7,
+        "story": 9,
+        "sound": 10,
+        "rating": 7.2
     }
 ]
