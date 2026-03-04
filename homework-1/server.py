@@ -5,6 +5,7 @@ from urllib.parse import urlparse, parse_qs
 from logic.games_service import *
 from logic.reviews_service import *
 from logic.analytics_service import *
+from logic.sessions_service import *
 
 PORT = 9002
 
@@ -95,14 +96,28 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
                 self._send_json({"error": "No data available for statistics."}, status=404)
             return
 
+        # -------------- GET SESSIONS FOR GAME ----------------
+        elif match_sess := re.fullmatch(r"/api/games/(?P<id>\d+)/sessions/?", clean_path):
+            game_id = int(match_sess.group("id"))
+            sessions = get_sessions_for_game(game_id)
+
+            if sessions:
+                self._send_json(sessions, status=200)
+            else:
+                self._send_json({"error": "No sessions for this game"}, status=404)
+            return
+
         # -------------- UNKNOWN ENDPOINT --------------
         else:
             self._send_json({"error": "Not found"}, status=404)
             return
 
     def do_POST(self):
+        parsed_url = urlparse(self.path)
+        clean_path = parsed_url.path
+
         # -------------- ADD A NEW GAME --------------
-        if re.fullmatch(r"/api/games/?", self.path):
+        if re.fullmatch(r"/api/games/?", clean_path):
             game_data = self._read_json()
 
             is_valid, error_message = validate_game_data(game_data)
@@ -116,13 +131,14 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
 
             new_game = create_game(game_data)
             self._send_json(new_game, status=201)
+            return
 
         # -------------- METHOD NOT ALLOWED --------------
-        elif re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path):
+        elif re.fullmatch(r"/api/games/(?P<id>\d+)/?", clean_path):
             self._send_json({"error": "Method Not Allowed"}, status=405)
 
         # -------------- ADD A NEW REVIEW --------------
-        elif match_game := re.fullmatch(r"/api/games/(?P<id>\d+)/review/?", self.path):
+        elif match_game := re.fullmatch(r"/api/games/(?P<id>\d+)/review/?", clean_path):
             game_id = int(match_game.group("id"))
 
             if not get_game_by_id(game_id):
@@ -143,14 +159,36 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
             self._send_json(new_review, status=201)
             return
 
+        # -------------- LOG A GAME SESSION --------------
+        elif match_sess := re.fullmatch(r"/api/games/(?P<id>\d+)/sessions/?", clean_path):
+            game_id = int(match_sess.group("id"))
+
+            if not get_game_by_id(game_id):
+                self._send_json({"error": "Game Not Found"}, status=404)
+                return
+
+            session_data = self._read_json()
+            is_valid, error_message = validate_session_data(session_data)
+
+            if not is_valid:
+                self._send_json({"error": error_message}, status=400)
+                return
+
+            new_sess = create_session(game_id, session_data)
+            self._send_json(new_sess, status=201)
+            return
+
         # -------------- UNKNOWN ENDPOINT --------------
         else:
             self._send_json({"error": "Not found"}, status=404)
             return
 
     def do_PUT(self):
+        parsed_url = urlparse(self.path)
+        clean_path = parsed_url.path
+
         # -------------- UPDATE A GAME --------------
-        if match_game := re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path):
+        if match_game := re.fullmatch(r"/api/games/(?P<id>\d+)/?", clean_path):
             game_id = int(match_game.group("id"))
             game_data = self._read_json()
 
@@ -167,7 +205,8 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
                 self._send_json({"error": "Game Not Found"}, status=404)
             return
 
-        elif match_review := re.fullmatch(r"/api/games/(?P<id>\d+)/review/?", self.path):
+        # -------------- UPDATE A GAME REVIEW --------------
+        elif match_review := re.fullmatch(r"/api/games/(?P<id>\d+)/review/?", clean_path):
             game_id = int(match_review.group("id"))
 
             if not get_game_by_id(game_id):
@@ -188,14 +227,34 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
                 self._send_json({"error": "Review not found for this game."}, status=404)
             return
 
+        # -------------- UPDATE A GAME SESSION --------------
+        elif match_sess := re.fullmatch(r"/api/sessions/(?P<id>\d+)/?", clean_path):
+            sess_id = int(match_sess.group("id"))
+            session_data = self._read_json()
+
+            is_valid, error_message = validate_session_data(session_data)
+            if not is_valid:
+                self._send_json({"error": error_message}, status=400)
+                return
+
+            updated = update_session(sess_id, session_data)
+            if updated:
+                self._send_json(updated)
+            else:
+                self._send_json({"error": "Session Not Found"}, status=404)
+            return
+
         # -------------- UNKNOWN ENDPOINT --------------
         else:
             self._send_json({"error": "Not Found"}, status=404)
             return
 
     def do_DELETE(self):
+        parsed_url = urlparse(self.path)
+        clean_path = parsed_url.path
+
         # -------------- DELETE GAME BY ID --------------
-        if match_game := re.fullmatch(r"/api/games/(?P<id>\d+)/?", self.path):
+        if match_game := re.fullmatch(r"/api/games/(?P<id>\d+)/?", clean_path):
             game_id = int(match_game.group("id"))
             is_deleted = delete_game(game_id)
 
@@ -206,7 +265,7 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
             return
 
         # -------------- DELETE REVIEW BY ID --------------
-        elif match_review := re.fullmatch(r"/api/games/(?P<id>\d+)/review/?", self.path):
+        elif match_review := re.fullmatch(r"/api/games/(?P<id>\d+)/review/?", clean_path):
             game_id = int(match_review.group("id"))
 
             if not get_game_by_id(game_id):
@@ -219,6 +278,14 @@ class CustomHandler(http.server.BaseHTTPRequestHandler):
                 self._send_json({"message": "Review Deleted Successfully"}, status=200)
             else:
                 self._send_json({"error": "Review Not Found for this game"}, status=404)
+            return
+
+        # -------------- DELETE A GAME SESSION --------------
+        elif match_sess := re.fullmatch(r"/api/sessions/(?P<id>\d+)/?", clean_path):
+            if delete_session(int(match_sess.group("id"))):
+                self._send_json({"message": "Session deleted"})
+            else:
+                self._send_json({"error": "Not Found"}, status=404)
             return
 
         # -------------- UNKNOWN ENDPOINT --------------
