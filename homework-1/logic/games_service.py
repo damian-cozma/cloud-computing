@@ -1,5 +1,6 @@
 import json
 from .reviews_service import delete_review
+from .sessions_service import delete_sessions_for_game
 
 GAMES_FILE = "storage/games.json"
 
@@ -42,6 +43,7 @@ def delete_game(game_id):
 
     delete_review(game_id)
     updated_list = list(filter(lambda game: game["id"] != game_id, games))
+    delete_sessions_for_game(game_id)
 
     if len(updated_list) != len(games):
         with open(GAMES_FILE, "w") as f:
