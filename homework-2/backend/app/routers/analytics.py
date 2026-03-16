@@ -5,15 +5,9 @@ from ..services.analytics_service import get_leaderboard, get_statistics
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
-@router.get("/leaderboard", status_code=status.HTTP_200_OK)
+@router.get("/leaderboard", response_model=list[dict], status_code=status.HTTP_200_OK)
 def leaderboard(platform: str | None = None, sort: Literal["asc", "desc"] = "desc"):
     data = get_leaderboard(platform_filter=platform, sort_order=sort)
-
-    if not data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="You haven't added games to your library or specified criteria doesn't match."
-        )
 
     return data
 
