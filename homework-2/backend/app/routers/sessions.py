@@ -6,7 +6,7 @@ from ..services.sessions_service import delete_session, get_sessions_for_game, c
 router = APIRouter(tags=["sessions"])
 
 
-@router.get("/games/{game_id}/sessions", status_code=status.HTTP_200_OK)
+@router.get("/games/{game_id}/sessions", response_model=list[SessionResponse], status_code=status.HTTP_200_OK)
 def get_game_sessions(game_id: int):
     game = get_game_by_id(game_id)
 
