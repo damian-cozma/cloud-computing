@@ -15,3 +15,8 @@ homework-2/backend/.env
 # OS files
 .DS_Store
 Thumbs.db
+
+# Storage files
+homework-2/backend/app/data/games.json
+homework-2/backend/app/data/reviews.json
+homework-2/backend/app/data/sessions.json
