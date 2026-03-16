@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import games
+from app.routers import games, reviews
 
 app = FastAPI()
 
@@ -8,3 +8,4 @@ def read_root():
     return {"message": "FastAPI works!"}
 
 app.include_router(games.router, prefix="/api")
+app.include_router(reviews.router, prefix="/api")
