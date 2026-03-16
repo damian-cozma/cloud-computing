@@ -13,10 +13,9 @@ from ..services.reviews_service import (
 router = APIRouter(tags=["reviews"])
 
 
-@router.get("/reviews", status_code=status.HTTP_200_OK)
+@router.get("/reviews", response_model=list[ReviewResponse], status_code=status.HTTP_200_OK)
 def get_reviews():
     return get_all_reviews()
-
 
 @router.get("/games/{game_id}/review", response_model=ReviewResponse, status_code=status.HTTP_200_OK)
 def get_game_review(game_id: int):
