@@ -24,7 +24,7 @@ def create_session(game_id, data):
         "id": new_id,
         "game_id": game_id,
         "duration_minutes": data["duration_minutes"],
-        "date": data["date"]
+        "date": data["date"].isoformat()
     }
     sessions.append(new_session)
     with open(SESSIONS_FILE, "w") as f:
@@ -39,7 +39,7 @@ def update_session(session_id, data):
     for s in sessions:
         if s["id"] == session_id:
             s["duration_minutes"] = data["duration_minutes"]
-            s["date"] = data["date"]
+            s["date"] = data["date"].isoformat()
             with open(SESSIONS_FILE, "w") as f:
                 json.dump(sessions, f, indent=4)
             return s
