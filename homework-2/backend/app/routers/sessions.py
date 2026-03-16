@@ -16,15 +16,7 @@ def get_game_sessions(game_id: int):
             detail="Game not found"
         )
 
-    sessions = get_sessions_for_game(game_id)
-
-    if not sessions:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No sessions for this game"
-        )
-
-    return sessions
+    return get_sessions_for_game(game_id)
 
 @router.post("/games/{game_id}/sessions", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
 def add_session(game_id: int, session: SessionCreate):
