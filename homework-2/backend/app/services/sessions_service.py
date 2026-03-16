@@ -1,7 +1,7 @@
 import json
-import re
+from pathlib import Path
 
-SESSIONS_FILE = "storage/sessions.json"
+SESSIONS_FILE = Path(__file__).resolve().parent.parent / "data" / "sessions.json"
 
 def get_sessions_for_game(game_id):
     try:
@@ -68,23 +68,3 @@ def delete_session(session_id):
             json.dump(sessions, f, indent=4)
         return True
     return False
-
-# ----------------- VALIDATION -----------------
-
-def validate_session_data(data):
-    if not isinstance(data, dict):
-        return False, "Payload must be a JSON object."
-
-    required_fields = ["duration_minutes", "date"]
-
-    for field in required_fields:
-        if field not in data:
-            return False, f"Missing required field: '{field}'."
-
-    if not isinstance(data["duration_minutes"], int) or data["duration_minutes"] <= 0:
-        return False, "Field 'duration_minutes' must be a positive integer."
-
-    if not isinstance(data["date"], str) or not re.match(r"^\d{4}-\d{2}-\d{2}$", data["date"]):
-        return False, "Field 'date' must be a string in YYYY-MM-DD format."
-
-    return True, None
