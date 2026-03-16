@@ -16,7 +16,7 @@ router = APIRouter(prefix="/games", tags=["games"])
 def get_games():
     return get_all_games()
 
-@router.get("/{game_id}", response_model=list[GameResponse],status_code=status.HTTP_200_OK)
+@router.get("/{game_id}", response_model=GameResponse,status_code=status.HTTP_200_OK)
 def get_game(game_id: int):
     game = get_game_by_id(game_id)
 
