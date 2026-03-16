@@ -37,14 +37,10 @@ def get_statistics():
     games = get_all_games()
     reviews = get_all_reviews()
 
-    if not games:
-        return None
-
     total_games = len(games)
     total_reviews = len(reviews)
 
     platforms_count = {}
-
     progress_count = {
         "Playing": 0,
         "Completed": 0,
@@ -55,19 +51,18 @@ def get_statistics():
         platform = game["platform"]
         progress = game.get("progress")
 
-        if platform in platforms_count:
-            platforms_count[platform] += 1
-        else:
-            platforms_count[platform] = 1
+        platforms_count[platform] = platforms_count.get(platform, 0) + 1
 
         if progress in progress_count:
             progress_count[progress] += 1
 
-    max_count = max(platforms_count.values())
-
-    favorite_platforms = [platform
-                          for platform, count in platforms_count.items()
-                          if count == max_count]
+    favorite_platforms = []
+    if platforms_count:
+        max_count = max(platforms_count.values())
+        favorite_platforms = [
+            platform for platform, count in platforms_count.items()
+            if count == max_count
+        ]
 
     return {
         "total_games": total_games,
