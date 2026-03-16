@@ -20,6 +20,9 @@ def get_game_by_id(game_id):
     return None
 
 def create_game(game_data):
+    if is_duplicate_game(game_data["title"], game_data["platform"]):
+        return None
+
     games = get_all_games()
     if games:
         last_game = games[-1]
@@ -41,17 +44,18 @@ def create_game(game_data):
 
 def delete_game(game_id):
     games = get_all_games()
+    updated_list = list(filter(lambda game: game["id"] != game_id, games))
+
+    if len(updated_list) == len(games):
+        return False
 
     delete_review(game_id)
-    updated_list = list(filter(lambda game: game["id"] != game_id, games))
     delete_sessions_for_game(game_id)
 
-    if len(updated_list) != len(games):
-        with open(GAMES_FILE, "w") as f:
-            json.dump(updated_list, f, indent=4)
-            return True
-    else:
-        return False
+    with open(GAMES_FILE, "w") as f:
+        json.dump(updated_list, f, indent=4)
+
+    return True
 
 def update_game(game_id, game_data):
     games = get_all_games()
@@ -72,34 +76,21 @@ def update_game(game_id, game_data):
 
 # ----------------- VALIDATION -----------------
 
-def validate_game_data(data):
-    if not isinstance(data, dict):
-        return False, "Payload must be a JSON object."
-
-    allowed_fields = ["title", "platform", "progress"]
-
-    for key in data.keys():
-        if key not in allowed_fields:
-            return False, f"Unexpected field: '{key}'"
-
-    for field in allowed_fields:
-        if field not in data:
-            return False, f"Missing required field: '{field}'."
-
-        if not isinstance(data[field], str) or not data[field].strip():
-            return False, f"Field '{field}' must be a non-empty string."
-
-    valid_progress_statuses = ["Playing", "Completed", "Abandoned"]
-
-    if data["progress"] not in valid_progress_statuses:
-        return False, f"Field 'progress' must be one of: {', '.join(valid_progress_statuses)}."
-
-    return True, None
-
 def is_duplicate_game(title, platform):
     games = get_all_games()
     for game in games:
         if game["title"].lower() == title.lower() and game["platform"].lower() == platform.lower():
+            return True
+
+    return False
+
+def is_duplicate_game_for_update(game_id: int, title: str, platform: str) -> bool:
+    games = get_all_games()
+
+    for game in games:
+        if game["id"] != game_id and \
+           game["title"].lower() == title.lower() and \
+           game["platform"].lower() == platform.lower():
             return True
 
     return False
