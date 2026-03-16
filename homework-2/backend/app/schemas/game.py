@@ -20,4 +20,4 @@ class GameResponse(BaseModel):
     id: int
     title: str
     platform: str
-    progress: str
+    progress: Literal["Playing", "Completed", "Abandoned"]
