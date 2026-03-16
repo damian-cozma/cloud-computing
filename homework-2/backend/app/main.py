@@ -7,4 +7,4 @@ app = FastAPI()
 def read_root():
     return {"message": "FastAPI works!"}
 
-app.include_router(games.router)
+app.include_router(games.router, prefix="/api")
