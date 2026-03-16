@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import games, reviews, analytics, sessions
+from app.routers import external_games, games, reviews, analytics, sessions
 
 app = FastAPI()
 
@@ -11,3 +11,4 @@ app.include_router(games.router, prefix="/api")
 app.include_router(reviews.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 app.include_router(sessions.router, prefix="/api")
+app.include_router(external_games.router, prefix="/api")

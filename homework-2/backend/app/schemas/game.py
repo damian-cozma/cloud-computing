@@ -7,6 +7,7 @@ class GameCreate(BaseModel):
     title: str
     platform: str
     progress: Literal["Playing", "Completed", "Abandoned"]
+    rawg_id: int | None = None
 
     @field_validator("title", "platform")
     @classmethod
@@ -21,3 +22,4 @@ class GameResponse(BaseModel):
     title: str
     platform: str
     progress: Literal["Playing", "Completed", "Abandoned"]
+    rawg_id: int | None = None
