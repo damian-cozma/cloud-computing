@@ -16,17 +16,5 @@
         "title": "Hollow Knight",
         "platform": "PC",
         "progress": "Completed"
-    },
-    {
-        "id": 4,
-        "title": "Bloodborne",
-        "platform": "Playstation",
-        "progress": "Abandoned"
-    },
-    {
-        "id": 5,
-        "title": "Zelda: Breath of the Wild",
-        "platform": "Nintendo Switch",
-        "progress": "Playing"
     }
 ]
