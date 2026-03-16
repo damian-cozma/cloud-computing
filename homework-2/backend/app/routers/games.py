@@ -6,6 +6,7 @@ from ..services.games_service import (
     delete_game,
     create_game,
     update_game,
+    is_duplicate_game_for_update
 )
 from ..schemas.game import GameCreate, GameResponse
 
@@ -52,6 +53,12 @@ def remove_game(game_id: int):
 
 @router.put("/{game_id}", response_model=GameResponse, status_code=status.HTTP_200_OK)
 def edit_game(game_id: int, game: GameCreate):
+    if is_duplicate_game_for_update(game_id, game.title, game.platform):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Game already exists"
+        )
+
     updated_game = update_game(game_id, game.model_dump())
 
     if updated_game is None:
