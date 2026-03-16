@@ -33,8 +33,11 @@ def create_session(game_id, data):
 
 
 def update_session(session_id, data):
-    with open(SESSIONS_FILE, "r") as f:
-        sessions = json.load(f)
+    try:
+        with open(SESSIONS_FILE, "r") as f:
+            sessions = json.load(f)
+    except FileNotFoundError:
+        return None
 
     for s in sessions:
         if s["id"] == session_id:
@@ -58,8 +61,11 @@ def delete_sessions_for_game(game_id):
         json.dump(updated_sessions, f, indent=4)
 
 def delete_session(session_id):
-    with open(SESSIONS_FILE, "r") as f:
-        sessions = json.load(f)
+    try:
+        with open(SESSIONS_FILE, "r") as f:
+            sessions = json.load(f)
+    except FileNotFoundError:
+        return False
 
     initial_len = len(sessions)
     sessions = [s for s in sessions if s["id"] != session_id]
