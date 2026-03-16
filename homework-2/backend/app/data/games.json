@@ -13,8 +13,14 @@
     },
     {
         "id": 3,
-        "title": "Hollow Knight",
+        "title": "Detroit: Become Human",
         "platform": "PC",
-        "progress": "Completed"
+        "progress": "Playing"
+    },
+    {
+        "id": 4,
+        "title": "Terraria",
+        "platform": "Nintendo Switch",
+        "progress": "Playing"
     }
 ]
