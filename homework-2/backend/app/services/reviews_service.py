@@ -1,6 +1,7 @@
 import json
+from pathlib import Path
 
-REVIEWS_FILE = "storage/reviews.json"
+REVIEWS_FILE = Path(__file__).resolve().parent.parent / "data" / "reviews.json"
 
 def get_all_reviews():
     try:
@@ -9,7 +10,7 @@ def get_all_reviews():
     except FileNotFoundError:
         return []
 
-def get_review_for_game(game_id):
+def get_review_for_game(game_id: int):
     reviews = get_all_reviews()
 
     for review in reviews:
@@ -26,9 +27,7 @@ def create_review(game_id, review_data):
     else:
         current_id = 1
 
-    score_fields = ["graphics", "mechanics", "story", "sound"]
-    total_score = sum(review_data[field] for field in score_fields)
-    average_score = round(total_score / 4, 2)
+    average_score = calculate_rating(review_data)
 
     new_review = {
         "id": current_id,
@@ -49,9 +48,7 @@ def update_review(game_id, review_data):
 
     for i, review in enumerate(reviews):
         if review["game_id"] == game_id:
-            score_fields = ["graphics", "mechanics", "story", "sound"]
-            total_score = sum(review_data[field] for field in score_fields)
-            average_score = round(total_score / 4, 2)
+            average_score = calculate_rating(review_data)
 
             reviews[i] = {
                 "id": review["id"],
@@ -80,30 +77,6 @@ def delete_review(game_id):
 
 # ----------------- VALIDATION -----------------
 
-def validate_review_data(data):
-    if not isinstance(data, dict):
-        return False, "Payload must be a JSON object."
-
-    allowed_fields = ["text", "graphics", "mechanics", "story", "sound"]
-
-    for key in data.keys():
-        if key not in allowed_fields:
-            return False, f"Unexpected field: '{key}'"
-
-    for field in allowed_fields:
-        if field not in data:
-            return False, f"Missing required field: '{field}'."
-
-    rating_fields = ["graphics", "mechanics", "story", "sound"]
-    for field in rating_fields:
-        if not isinstance(data[field], int) or not (1 <= data[field] <= 10):
-            return False, f"Field {field} must be an integer between 1 and 10."
-
-    if not isinstance(data["text"], str) or not data["text"].strip():
-        return False, "Field 'text' must be a non-empty string."
-
-    return True, None
-
 def is_duplicate_review(game_id):
     reviews = get_all_reviews()
     for review in reviews:
@@ -111,3 +84,10 @@ def is_duplicate_review(game_id):
             return True
 
     return False
+
+# ----------------- UTILS -----------------
+
+def calculate_rating(review_data):
+    score_fields = ["graphics", "mechanics", "story", "sound"]
+    total = sum(review_data[field] for field in score_fields)
+    return round(total / len(score_fields), 2)
