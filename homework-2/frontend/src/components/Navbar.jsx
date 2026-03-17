@@ -14,6 +14,8 @@ export default function Navbar() {
         <Link to="/" className="nav-link">Home</Link>
         <Link to="/browse" className="nav-link">Browse</Link>
         <Link to="/library" className="nav-link">My Library</Link>
+          <Link to="/sessions" className="nav-link">Sessions</Link>
+          <Link to="/analytics" className="nav-link">Analytics</Link>
       </div>
     </nav>
   );
