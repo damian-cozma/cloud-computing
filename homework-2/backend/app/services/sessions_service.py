@@ -3,6 +3,13 @@ from pathlib import Path
 
 SESSIONS_FILE = Path(__file__).resolve().parent.parent / "data" / "sessions.json"
 
+def get_all_sessions():
+    try:
+        with open(SESSIONS_FILE, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return []
+
 def get_sessions_for_game(game_id):
     try:
         with open(SESSIONS_FILE, "r") as f:

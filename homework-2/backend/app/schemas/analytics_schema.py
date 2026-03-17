@@ -18,3 +18,4 @@ class StatisticsResponse(BaseModel):
     favorite_platforms: list[str]
     games_per_platform: dict[str, int]
     overall_progress: ProgressStats
+    total_hours_played: float
