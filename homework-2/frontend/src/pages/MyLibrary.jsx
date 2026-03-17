@@ -1,11 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "./MyLibrary.css";
+
+const REVIEW_CATEGORIES = ["graphics", "mechanics", "story", "sound"];
+
+function capitalize(word) {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+function getProgressClass(progress) {
+  if (!progress) return "";
+  return `status-${progress.toLowerCase()}`;
+}
 
 export default function MyLibrary() {
   const [games, setGames] = useState([]);
   const [reviewedGameIds, setReviewedGameIds] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterPlatform, setFilterPlatform] = useState("All");
@@ -15,27 +26,38 @@ export default function MyLibrary() {
   const [reviewMsg, setReviewMsg] = useState(null);
 
   const [reviewForm, setReviewForm] = useState({
-    text: "", graphics: 5, mechanics: 5, story: 5, sound: 5
+    text: "",
+    graphics: 5,
+    mechanics: 5,
+    story: 5,
+    sound: 5,
   });
 
   const fetchData = async () => {
     try {
+      setLoading(true);
+      setError("");
+
       const [gamesRes, reviewsRes] = await Promise.all([
         fetch("/api/games/"),
-        fetch("/api/reviews")
+        fetch("/api/reviews"),
       ]);
 
-      if (!gamesRes.ok) throw new Error("Failed to load library.");
+      if (!gamesRes.ok) {
+        throw new Error("Failed to load library.");
+      }
 
       const gamesData = await gamesRes.json();
-      setGames(gamesData);
+      setGames(Array.isArray(gamesData) ? gamesData : []);
 
       if (reviewsRes.ok) {
         const reviewsData = await reviewsRes.json();
-        setReviewedGameIds(reviewsData.map(r => r.game_id));
+        setReviewedGameIds(reviewsData.map((review) => review.game_id));
+      } else {
+        setReviewedGameIds([]);
       }
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -47,12 +69,16 @@ export default function MyLibrary() {
 
   const handleDeleteGame = async (id) => {
     if (!window.confirm("Are you sure you want to remove this game?")) return;
+
     try {
       const response = await fetch(`/api/games/${id}`, { method: "DELETE" });
-      if (!response.ok) throw new Error("Failed to delete game.");
 
-      setGames(games.filter(game => game.id !== id));
-      setReviewedGameIds(prev => prev.filter(gameId => gameId !== id));
+      if (!response.ok) {
+        throw new Error("Failed to delete game.");
+      }
+
+      setGames((prev) => prev.filter((game) => game.id !== id));
+      setReviewedGameIds((prev) => prev.filter((gameId) => gameId !== id));
     } catch (err) {
       alert(err.message);
     }
@@ -64,18 +90,26 @@ export default function MyLibrary() {
         title: game.title,
         platform: game.platform,
         progress: newProgress,
-        rawg_id: game.rawg_id
+        rawg_id: game.rawg_id,
       };
 
       const response = await fetch(`/api/games/${game.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedData)
+        body: JSON.stringify(updatedData),
       });
 
-      if (!response.ok) throw new Error("Failed to update progress.");
-      setGames(games.map(g => g.id === game.id ? { ...g, progress: newProgress } : g));
+      if (!response.ok) {
+        throw new Error("Failed to update progress.");
+      }
 
+      setGames((prev) =>
+        prev.map((currentGame) =>
+          currentGame.id === game.id
+            ? { ...currentGame, progress: newProgress }
+            : currentGame
+        )
+      );
     } catch (err) {
       alert("Error updating status: " + err.message);
     }
@@ -87,15 +121,28 @@ export default function MyLibrary() {
 
     try {
       const res = await fetch(`/api/games/${game.id}/review`);
+
       if (res.ok) {
         const data = await res.json();
+
         setReviewForm({
-          text: data.text, graphics: data.graphics,
-          mechanics: data.mechanics, story: data.story, sound: data.sound
+          text: data.text,
+          graphics: data.graphics,
+          mechanics: data.mechanics,
+          story: data.story,
+          sound: data.sound,
         });
+
         setIsUpdating(true);
       } else {
-        setReviewForm({ text: "", graphics: 5, mechanics: 5, story: 5, sound: 5 });
+        setReviewForm({
+          text: "",
+          graphics: 5,
+          mechanics: 5,
+          story: 5,
+          sound: 5,
+        });
+
         setIsUpdating(false);
       }
     } catch (err) {
@@ -103,26 +150,31 @@ export default function MyLibrary() {
     }
   };
 
-  const closeReviewModal = () => setReviewModal({ isOpen: false, game: null });
+  const closeReviewModal = () => {
+    setReviewModal({ isOpen: false, game: null });
+    setReviewMsg(null);
+  };
 
   const handleReviewChange = (e) => {
     const { name, value } = e.target;
-    setReviewForm(prev => ({
+
+    setReviewForm((prev) => ({
       ...prev,
-      [name]: name === "text" ? value : parseInt(value, 10)
+      [name]: name === "text" ? value : parseInt(value, 10),
     }));
   };
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     setReviewMsg(null);
+
     const method = isUpdating ? "PUT" : "POST";
 
     try {
       const res = await fetch(`/api/games/${reviewModal.game.id}/review`, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(reviewForm)
+        body: JSON.stringify(reviewForm),
       });
 
       if (!res.ok) {
@@ -131,8 +183,14 @@ export default function MyLibrary() {
       }
 
       setReviewMsg({ type: "success", text: "Review saved successfully!" });
-      if (!isUpdating) setReviewedGameIds(prev => [...prev, reviewModal.game.id]);
-      setTimeout(() => closeReviewModal(), 1500);
+
+      if (!isUpdating) {
+        setReviewedGameIds((prev) => [...prev, reviewModal.game.id]);
+      }
+
+      setTimeout(() => {
+        closeReviewModal();
+      }, 1400);
     } catch (err) {
       setReviewMsg({ type: "error", text: err.message });
     }
@@ -140,125 +198,238 @@ export default function MyLibrary() {
 
   const handleDeleteReview = async () => {
     if (!window.confirm("Are you sure you want to delete this review?")) return;
+
     try {
-      const res = await fetch(`/api/games/${reviewModal.game.id}/review`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete review.");
+      const res = await fetch(`/api/games/${reviewModal.game.id}/review`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete review.");
+      }
 
       setReviewMsg({ type: "success", text: "Review deleted." });
-      setReviewedGameIds(prev => prev.filter(id => id !== reviewModal.game.id));
-      setTimeout(() => closeReviewModal(), 1500);
+      setReviewedGameIds((prev) =>
+        prev.filter((id) => id !== reviewModal.game.id)
+      );
+
+      setTimeout(() => {
+        closeReviewModal();
+      }, 1400);
     } catch (err) {
       setReviewMsg({ type: "error", text: err.message });
     }
   };
 
-  const availablePlatforms = ["All", ...new Set(games.map(g => g.platform))];
+  const availablePlatforms = useMemo(() => {
+    return ["All", ...new Set(games.map((game) => game.platform))];
+  }, [games]);
 
-  const filteredGames = games.filter(game => {
-    const matchStatus = filterStatus === "All" || game.progress === filterStatus;
-    const matchPlatform = filterPlatform === "All" || game.platform === filterPlatform;
-    return matchStatus && matchPlatform;
-  });
+  const filteredGames = useMemo(() => {
+    return games.filter((game) => {
+      const matchStatus =
+        filterStatus === "All" || game.progress === filterStatus;
+      const matchPlatform =
+        filterPlatform === "All" || game.platform === filterPlatform;
 
-  if (loading) return <div className="library-container"><h2 className="loading">Loading library...</h2></div>;
-  if (error) return <div className="library-container"><h2 className="error">{error}</h2></div>;
+      return matchStatus && matchPlatform;
+    });
+  }, [games, filterStatus, filterPlatform]);
+
+  const totalReviewed = reviewedGameIds.length;
+
+  if (loading) {
+    return (
+      <section className="library-page">
+        <div className="library-loading">
+          <div className="library-spinner" />
+          <p>Loading your library...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="library-page">
+        <div className="library-empty-state">
+          <h2>Couldn’t load your library</h2>
+          <p>{error}</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <div className="library-container">
-      <h1 className="library-title">My Collection</h1>
+    <section className="library-page">
+      <div className="library-shell">
+        <header className="library-header">
+          <h1 className="library-title">My Collection</h1>
+          <p className="library-subtitle">
+            Organize your games, track progress and manage reviews in one place.
+          </p>
+        </header>
 
-      {games.length > 0 && (
-        <div className="filters-bar">
-          <div className="filter-group">
-            <label>Filter by Status</label>
-            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-              <option value="All">All Statuses</option>
-              <option value="Playing">Playing</option>
-              <option value="Completed">Completed</option>
-              <option value="Abandoned">Abandoned</option>
-            </select>
-          </div>
+        <section className="library-overview">
+          <article className="library-overview-card">
+            <span className="library-overview-label">Total Games</span>
+            <strong className="library-overview-value">{games.length}</strong>
+          </article>
 
-          <div className="filter-group">
-            <label>Filter by Platform</label>
-            <select value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)}>
-              {availablePlatforms.map(platform => (
-                <option key={platform} value={platform}>
-                  {platform === "All" ? "All Platforms" : platform}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
+          <article className="library-overview-card">
+            <span className="library-overview-label">Reviewed Games</span>
+            <strong className="library-overview-value">{totalReviewed}</strong>
+          </article>
 
-      {games.length === 0 ? (
-        <div className="empty-state">
-          <p>Your library is empty. Time to add some games!</p>
-        </div>
-      ) : filteredGames.length === 0 ? (
-        <div className="empty-state">
-          <p>No games match your current filters.</p>
-          <button className="cancel-btn" onClick={() => { setFilterStatus("All"); setFilterPlatform("All"); }}>
-            Reset Filters
-          </button>
-        </div>
-      ) : (
-        <div className="library-grid">
-          {filteredGames.map(game => {
-            const hasReview = reviewedGameIds.includes(game.id);
+          <article className="library-overview-card library-overview-card--accent">
+            <span className="library-overview-label">Visible Now</span>
+            <strong className="library-overview-value">
+              {filteredGames.length}
+            </strong>
+          </article>
+        </section>
 
-            return (
-              <div key={game.id} className="library-card">
-                <div className="card-header">
-                  <h3>{game.title}</h3>
-                  <button
-                    className="delete-btn"
-                    onClick={() => handleDeleteGame(game.id)}
-                    title="Remove from library"
-                  >✕</button>
-                </div>
+        {games.length > 0 && (
+          <section className="library-filters">
+            <div className="library-filters-head">
+              <span>Filters</span>
+            </div>
 
-                <div className="card-body">
-                  <span className="lib-platform">{game.platform}</span>
-
-                  <select
-                    className={`lib-progress status-${game.progress.toLowerCase()}`}
-                    value={game.progress}
-                    onChange={(e) => handleProgressChange(game, e.target.value)}
-                    title="Change progress status"
-                  >
-                    <option value="Playing">Playing</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Abandoned">Abandoned</option>
-                  </select>
-                </div>
-
-                <button
-                  className={`review-trigger-btn ${hasReview ? 'has-review' : ''}`}
-                  onClick={() => openReviewModal(game)}
-                  style={hasReview ? { borderColor: '#4ade80', color: '#4ade80' } : {}}
+            <div className="library-filters-controls">
+              <label className="library-filter-group">
+                <span>Status</span>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
                 >
-                  {hasReview ? "Edit Review ✎" : "Review Game ✎"}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                  <option value="All">All Statuses</option>
+                  <option value="Playing">Playing</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Abandoned">Abandoned</option>
+                </select>
+              </label>
+
+              <label className="library-filter-group">
+                <span>Platform</span>
+                <select
+                  value={filterPlatform}
+                  onChange={(e) => setFilterPlatform(e.target.value)}
+                >
+                  {availablePlatforms.map((platform) => (
+                    <option key={platform} value={platform}>
+                      {platform === "All" ? "All Platforms" : platform}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <button
+                type="button"
+                className="library-reset-btn"
+                onClick={() => {
+                  setFilterStatus("All");
+                  setFilterPlatform("All");
+                }}
+              >
+                Reset
+              </button>
+            </div>
+          </section>
+        )}
+
+        {games.length === 0 ? (
+          <div className="library-empty-state">
+            <h2>Your library is empty</h2>
+            <p>Time to add some games and start building your collection.</p>
+          </div>
+        ) : filteredGames.length === 0 ? (
+          <div className="library-empty-state">
+            <h2>No games match your filters</h2>
+            <p>Try resetting the filters and check again.</p>
+          </div>
+        ) : (
+          <div className="library-grid">
+            {filteredGames.map((game) => {
+              const hasReview = reviewedGameIds.includes(game.id);
+
+              return (
+                <article key={game.id} className="library-card">
+                  <div className="library-card-top">
+                    <div className="library-card-title-wrap">
+                      <h3>{game.title}</h3>
+                      <p>{game.platform}</p>
+                    </div>
+
+                    <button
+                      className="library-delete-btn"
+                      onClick={() => handleDeleteGame(game.id)}
+                      title="Remove from library"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="library-card-tags">
+                    <span className="library-platform-pill">{game.platform}</span>
+
+                    <select
+                      className={`library-progress-select ${getProgressClass(game.progress)}`}
+                      value={game.progress}
+                      onChange={(e) =>
+                        handleProgressChange(game, e.target.value)
+                      }
+                      title="Change progress status"
+                    >
+                      <option value="Playing">Playing</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Abandoned">Abandoned</option>
+                    </select>
+                  </div>
+
+                  <div className="library-card-footer">
+                    <div className="library-review-state">
+                      <span
+                        className={`library-review-dot ${
+                          hasReview ? "has-review" : "no-review"
+                        }`}
+                      />
+                      <span>{hasReview ? "Review saved" : "No review yet"}</span>
+                    </div>
+
+                    <button
+                      className={`library-review-btn ${
+                        hasReview ? "has-review" : ""
+                      }`}
+                      onClick={() => openReviewModal(game)}
+                    >
+                      {hasReview ? "Edit Review ✎" : "Write Review ✎"}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {reviewModal.isOpen && (
-        <div className="modal-overlay" onClick={closeReviewModal}>
-          <div className="modal-content review-modal" onClick={e => e.stopPropagation()}>
-            <h2>{isUpdating ? "Edit Review" : "Write a Review"}</h2>
-            <p className="modal-game-title">{reviewModal.game.title}</p>
+        <div className="library-modal-overlay" onClick={closeReviewModal}>
+          <div
+            className="library-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="library-modal-header">
+              <h2>{isUpdating ? "Edit Review" : "Write a Review"}</h2>
+              <p>{reviewModal.game.title}</p>
+            </div>
 
-            <form onSubmit={handleReviewSubmit} className="modal-form">
-              <div className="form-group full-width">
-                <label>Review Text</label>
+            <form onSubmit={handleReviewSubmit} className="library-modal-form">
+              <div className="library-form-group">
+                <label htmlFor="text">Review Text</label>
                 <textarea
+                  id="text"
                   name="text"
-                  rows="4"
+                  rows="5"
                   value={reviewForm.text}
                   onChange={handleReviewChange}
                   placeholder="What did you think about the game?"
@@ -266,11 +437,15 @@ export default function MyLibrary() {
                 />
               </div>
 
-              <div className="scores-grid">
-                {["graphics", "mechanics", "story", "sound"].map(category => (
-                  <div className="score-group" key={category}>
-                    <label>{category.charAt(0).toUpperCase() + category.slice(1)}: <span>{reviewForm[category]}</span></label>
+              <div className="library-scores-grid">
+                {REVIEW_CATEGORIES.map((category) => (
+                  <div className="library-score-group" key={category}>
+                    <label htmlFor={category}>
+                      {capitalize(category)}
+                      <span>{reviewForm[category]}/10</span>
+                    </label>
                     <input
+                      id={category}
                       type="range"
                       name={category}
                       min="1"
@@ -283,26 +458,48 @@ export default function MyLibrary() {
               </div>
 
               {reviewMsg && (
-                <p className={reviewMsg.type === "success" ? "success-msg" : "error-msg"}>
+                <p
+                  className={
+                    reviewMsg.type === "success"
+                      ? "library-message success"
+                      : "library-message error"
+                  }
+                >
                   {reviewMsg.text}
                 </p>
               )}
 
-              <div className="modal-actions review-actions">
-                {isUpdating && (
-                  <button type="button" className="delete-review-btn" onClick={handleDeleteReview}>
-                    Delete Review
+              <div className="library-modal-actions">
+                <div className="library-modal-left">
+                  {isUpdating && (
+                    <button
+                      type="button"
+                      className="library-danger-btn"
+                      onClick={handleDeleteReview}
+                    >
+                      Delete Review
+                    </button>
+                  )}
+                </div>
+
+                <div className="library-modal-right">
+                  <button
+                    type="button"
+                    className="library-secondary-btn"
+                    onClick={closeReviewModal}
+                  >
+                    Cancel
                   </button>
-                )}
-                <div className="right-actions">
-                  <button type="button" className="cancel-btn" onClick={closeReviewModal}>Cancel</button>
-                  <button type="submit" className="submit-btn">Save Review</button>
+
+                  <button type="submit" className="library-primary-btn">
+                    Save Review
+                  </button>
                 </div>
               </div>
             </form>
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
