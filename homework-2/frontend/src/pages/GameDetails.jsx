@@ -8,6 +8,11 @@ export default function GameDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [progress, setProgress] = useState("Playing");
+  const [platform, setPlatform] = useState("");
+  const [addStatus, setAddStatus] = useState(null);
+
   useEffect(() => {
     const fetchGameDetails = async () => {
       try {
@@ -20,6 +25,10 @@ export default function GameDetails() {
 
         const data = await response.json();
         setGame(data);
+
+        if (data.platforms && data.platforms.length > 0) {
+          setPlatform(data.platforms[0]);
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -29,6 +38,41 @@ export default function GameDetails() {
 
     fetchGameDetails();
   }, [id]);
+
+  const handleAddToLibrary = async (e) => {
+    e.preventDefault();
+    setAddStatus(null);
+
+    const gameData = {
+      title: game.name,
+      platform: platform,
+      progress: progress,
+      rawg_id: game.rawg_id
+    };
+
+    try {
+      const response = await fetch(`/api/games/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(gameData),
+      });
+
+      if (!response.ok) {
+        if (response.status === 409) throw new Error("Game is already in your library!");
+        throw new Error("Failed to add game.");
+      }
+
+      setAddStatus("success");
+      setTimeout(() => {
+        setIsModalOpen(false);
+        setAddStatus(null);
+      }, 2000);
+    } catch (err) {
+      setAddStatus(err.message);
+    }
+  };
 
   if (loading) return <div className="details-container"><h2 className="loading">Loading...</h2></div>;
   if (error) return <div className="details-container"><h2 className="error">{error}</h2></div>;
@@ -53,8 +97,8 @@ export default function GameDetails() {
           <div className="tags-section">
             <h3>Platforms</h3>
             <div className="tags-list">
-              {game.platforms?.map(platform => (
-                <span key={platform} className="tag platform-tag">{platform}</span>
+              {game.platforms?.map(p => (
+                <span key={p} className="tag platform-tag">{p}</span>
               ))}
             </div>
           </div>
@@ -68,8 +112,48 @@ export default function GameDetails() {
             </div>
           </div>
 
+          <button className="add-library-btn" onClick={() => setIsModalOpen(true)}>
+            + Add to Library
+          </button>
         </div>
       </div>
+
+      {isModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>Add to Library</h2>
+            <p className="modal-game-title">{game.name}</p>
+
+            <form onSubmit={handleAddToLibrary} className="modal-form">
+              <div className="form-group">
+                <label>Progress</label>
+                <select value={progress} onChange={(e) => setProgress(e.target.value)}>
+                  <option value="Playing">Playing</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Abandoned">Abandoned</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Platform</label>
+                <select value={platform} onChange={(e) => setPlatform(e.target.value)}>
+                  {game.platforms?.map(p => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+
+              {addStatus === "success" && <p className="success-msg">Successfully added!</p>}
+              {addStatus && addStatus !== "success" && <p className="error-msg">{addStatus}</p>}
+
+              <div className="modal-actions">
+                <button type="button" className="cancel-btn" onClick={() => setIsModalOpen(false)}>Cancel</button>
+                <button type="submit" className="submit-btn">Save Game</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
