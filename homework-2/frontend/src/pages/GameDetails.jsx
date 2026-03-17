@@ -1,57 +1,98 @@
-import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import "./GameDetails.css";
+
+function formatDate(dateString) {
+  if (!dateString) return "TBA";
+
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return dateString;
+
+  return date.toLocaleDateString();
+}
+
+function formatRating(value) {
+  if (value == null || Number(value) <= 0) return "N/A";
+  return Number(value).toFixed(1);
+}
 
 export default function GameDetails() {
   const { id } = useParams();
+
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [progress, setProgress] = useState("Playing");
   const [platform, setPlatform] = useState("");
-  const [addStatus, setAddStatus] = useState(null);
+  const [addStatus, setAddStatus] = useState("");
+
+  const [heroImageFailed, setHeroImageFailed] = useState(false);
+  const [coverImageFailed, setCoverImageFailed] = useState(false);
 
   useEffect(() => {
-    const fetchGameDetails = async () => {
+    let cancelled = false;
+
+    async function fetchGameDetails() {
       try {
+        setLoading(true);
+        setError("");
+        setHeroImageFailed(false);
+        setCoverImageFailed(false);
+
         const response = await fetch(`/api/external/games/${id}`);
 
         if (!response.ok) {
-          if (response.status === 404) throw new Error("Game not found.");
+          if (response.status === 404) {
+            throw new Error("Game not found.");
+          }
+
           throw new Error("Error loading game details.");
         }
 
         const data = await response.json();
-        setGame(data);
 
-        if (data.platforms && data.platforms.length > 0) {
-          setPlatform(data.platforms[0]);
+        if (!cancelled) {
+          setGame(data);
+
+          if (data.platforms?.length > 0) {
+            setPlatform(data.platforms[0]);
+          } else {
+            setPlatform("");
+          }
         }
       } catch (err) {
-        setError(err.message);
+        if (!cancelled) {
+          setError(err.message || "Something went wrong.");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
-    };
+    }
 
     fetchGameDetails();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const handleAddToLibrary = async (e) => {
     e.preventDefault();
-    setAddStatus(null);
+    setAddStatus("");
 
     const gameData = {
       title: game.name,
-      platform: platform,
-      progress: progress,
-      rawg_id: game.rawg_id
+      platform,
+      progress,
+      rawg_id: game.rawg_id,
     };
 
     try {
-      const response = await fetch(`/api/games/`, {
+      const response = await fetch("/api/games/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -60,100 +101,239 @@ export default function GameDetails() {
       });
 
       if (!response.ok) {
-        if (response.status === 409) throw new Error("Game is already in your library!");
+        if (response.status === 409) {
+          throw new Error("Game is already in your library!");
+        }
+
         throw new Error("Failed to add game.");
       }
 
       setAddStatus("success");
+
       setTimeout(() => {
         setIsModalOpen(false);
-        setAddStatus(null);
-      }, 2000);
+        setAddStatus("");
+      }, 1800);
     } catch (err) {
-      setAddStatus(err.message);
+      setAddStatus(err.message || "Failed to add game.");
     }
   };
 
-  if (loading) return <div className="details-container"><h2 className="loading">Loading...</h2></div>;
-  if (error) return <div className="details-container"><h2 className="error">{error}</h2></div>;
+  const heroStyle = useMemo(() => {
+    if (!game?.background_image || heroImageFailed) {
+      return {};
+    }
+
+    return {
+      backgroundImage: `url(${game.background_image})`,
+    };
+  }, [game, heroImageFailed]);
+
+  if (loading) {
+    return (
+      <section className="game-details-page">
+        <div className="game-details-loading">
+          <div className="game-details-spinner" />
+          <p>Loading game details...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="game-details-page">
+        <div className="game-details-empty-state">
+          <h2>Couldn’t load this game</h2>
+          <p>{error}</p>
+          <Link to="/browse" className="game-details-back-link">
+            ← Back to Browse
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
   if (!game) return null;
 
   return (
-    <div className="details-container">
-      <Link to="/browse" className="back-button">← Back to Browse</Link>
+    <section className="game-details-page">
+      <div className="game-details-shell">
+        <Link to="/browse" className="game-details-back-link">
+          ← Back to Browse
+        </Link>
 
-      <div className="details-header" style={{ backgroundImage: `linear-gradient(rgba(15, 15, 15, 0.8), rgba(15, 15, 15, 1)), url(${game.background_image})` }}>
-        <img src={game.background_image} alt={game.name} className="details-cover" />
+        <section
+          className={`game-hero ${heroImageFailed || !game.background_image ? "is-fallback" : ""}`}
+        >
+          {!heroImageFailed && game.background_image && (
+            <div className="game-hero-image" style={heroStyle} />
+          )}
 
-        <div className="details-info">
-          <h1>{game.name}</h1>
+          <div className="game-hero-backdrop" />
 
-          <div className="badges-row">
-            {game.metacritic && <span className="badge metacritic">Metacritic: {game.metacritic}</span>}
-            <span className="badge rating">⭐ {game.rating}</span>
-            <span className="badge date">📅 {game.released}</span>
-          </div>
+          <div className="game-hero-content">
+            <div className="game-cover-wrap">
+              {!coverImageFailed && game.background_image ? (
+                <img
+                  src={game.background_image}
+                  alt={game.name}
+                  className="game-cover"
+                  onError={() => setCoverImageFailed(true)}
+                />
+              ) : (
+                <div className="game-cover-fallback">
+                  <span>Game Details</span>
+                </div>
+              )}
+            </div>
 
-          <div className="tags-section">
-            <h3>Platforms</h3>
-            <div className="tags-list">
-              {game.platforms?.map(p => (
-                <span key={p} className="tag platform-tag">{p}</span>
-              ))}
+            <div className="game-main-info">
+              <h1 className="game-title">{game.name}</h1>
+
+              <div className="game-badges">
+                {game.metacritic ? (
+                  <span className="game-badge game-badge--metacritic">
+                    Metacritic: {game.metacritic}
+                  </span>
+                ) : null}
+
+                <span className="game-badge game-badge--rating">
+                  ⭐ {formatRating(game.rating)}
+                </span>
+
+                <span className="game-badge game-badge--date">
+                  📅 {formatDate(game.released)}
+                </span>
+              </div>
+
+              <div className="game-info-block">
+                <h3>Platforms</h3>
+                <div className="game-tag-list">
+                  {game.platforms?.length ? (
+                    game.platforms.map((item) => (
+                      <span key={item} className="game-tag game-tag--platform">
+                        {item}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="game-muted">No platform data available.</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="game-info-block">
+                <h3>Genres</h3>
+                <div className="game-tag-list">
+                  {game.genres?.length ? (
+                    game.genres.map((item) => (
+                      <span key={item} className="game-tag game-tag--genre">
+                        {item}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="game-muted">No genre data available.</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="game-actions">
+                <button
+                  type="button"
+                  className="game-primary-btn"
+                  onClick={() => {
+                    setAddStatus("");
+                    setIsModalOpen(true);
+                  }}
+                >
+                  + Add to Library
+                </button>
+              </div>
             </div>
           </div>
-
-          <div className="tags-section">
-            <h3>Genres</h3>
-            <div className="tags-list">
-              {game.genres?.map(genre => (
-                <span key={genre} className="tag genre-tag">{genre}</span>
-              ))}
-            </div>
-          </div>
-
-          <button className="add-library-btn" onClick={() => setIsModalOpen(true)}>
-            + Add to Library
-          </button>
-        </div>
+        </section>
       </div>
 
       {isModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Add to Library</h2>
-            <p className="modal-game-title">{game.name}</p>
+        <div
+          className="game-modal-overlay"
+          onClick={() => {
+            setIsModalOpen(false);
+            setAddStatus("");
+          }}
+        >
+          <div
+            className="game-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="game-modal-header">
+              <h2>Add to Library</h2>
+              <p>{game.name}</p>
+            </div>
 
-            <form onSubmit={handleAddToLibrary} className="modal-form">
-              <div className="form-group">
-                <label>Progress</label>
-                <select value={progress} onChange={(e) => setProgress(e.target.value)}>
+            <form className="game-modal-form" onSubmit={handleAddToLibrary}>
+              <div className="game-form-group">
+                <label htmlFor="progress">Progress</label>
+                <select
+                  id="progress"
+                  value={progress}
+                  onChange={(e) => setProgress(e.target.value)}
+                >
                   <option value="Playing">Playing</option>
                   <option value="Completed">Completed</option>
                   <option value="Abandoned">Abandoned</option>
                 </select>
               </div>
 
-              <div className="form-group">
-                <label>Platform</label>
-                <select value={platform} onChange={(e) => setPlatform(e.target.value)}>
-                  {game.platforms?.map(p => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
+              <div className="game-form-group">
+                <label htmlFor="platform">Platform</label>
+                <select
+                  id="platform"
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value)}
+                >
+                  {game.platforms?.length ? (
+                    game.platforms.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">Unknown</option>
+                  )}
                 </select>
               </div>
 
-              {addStatus === "success" && <p className="success-msg">Successfully added!</p>}
-              {addStatus && addStatus !== "success" && <p className="error-msg">{addStatus}</p>}
+              {addStatus === "success" && (
+                <p className="game-status game-status--success">
+                  Successfully added!
+                </p>
+              )}
 
-              <div className="modal-actions">
-                <button type="button" className="cancel-btn" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                <button type="submit" className="submit-btn">Save Game</button>
+              {addStatus && addStatus !== "success" && (
+                <p className="game-status game-status--error">{addStatus}</p>
+              )}
+
+              <div className="game-modal-actions">
+                <button
+                  type="button"
+                  className="game-secondary-btn"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setAddStatus("");
+                  }}
+                >
+                  Cancel
+                </button>
+
+                <button type="submit" className="game-primary-btn">
+                  Save Game
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
