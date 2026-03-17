@@ -1,28 +1,20 @@
-import { useEffect, useState } from "react";
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-function App() {
-  const [games, setGames] = useState([]);
+import Navbar from "./components/Navbar"; // <-- Importă Navbar
+import HomePage from "./pages/HomePage";
+import Browse from "./pages/Browse";
+import GameDetails from "./pages/GameDetails";
 
-  useEffect(() => {
-    fetch("/api/games")
-      .then((response) => response.json())
-      .then((data) => setGames(data))
-      .catch((error) => console.error("Error fetching games:", error));
-  }, []);
-
+export default function App() {
   return (
-    <div>
-      <h1>Games</h1>
-
-      {games.map((game) => (
-        <div key={game.id}>
-          <h3>{game.title}</h3>
-          <p>Platform: {game.platform}</p>
-          <p>Progress: {game.progress}</p>
-        </div>
-      ))}
-    </div>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/browse" element={<Browse />} />
+        <Route path="/game/:id" element={<GameDetails />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
-
-export default App;
