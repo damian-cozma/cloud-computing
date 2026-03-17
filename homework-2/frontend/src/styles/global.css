@@ -1,0 +1,24 @@
+:root {
+  --bg-dark: #050505;
+  --bg-card: #121212;
+  --text-main: #ffffff;
+  --text-muted: #94a3b8;
+  --primary: #6366f1;
+  --primary-hover: #8b5cf6;
+  --accent: #a78bfa;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--bg-dark);
+  background: radial-gradient(circle at top center, #1a1033 0%, var(--bg-dark) 80%);
+  background-attachment: fixed;
+  color: var(--text-main);
+  overflow-x: hidden;
+}
