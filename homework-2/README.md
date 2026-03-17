@@ -35,7 +35,7 @@ A full-stack gaming hub designed for enthusiasts to manage their personal collec
 <br><br>
 
 * **Game News & Trends**
-<img width="1863" height="912" alt="image" src="https://github.com/user-attachments/assets/b662e42d-a15d-4e2c-b5a5-10f647343ac2" />
+<img width="1863" height="911" alt="image" src="https://github.com/user-attachments/assets/6643d8de-dc82-429a-93e5-8c9be37b3463" />
 
 
 ## Technologies
