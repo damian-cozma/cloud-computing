@@ -39,7 +39,9 @@ A full-stack gaming hub designed for enthusiasts to manage their personal collec
 ### Backend
 * **Language**: Python 3.x
 * **Framework**: FastAPI - For high-performance asynchronous API routing.
-* **External Integration**: NewsAPI - To fetch real-time global gaming news.
+* **External Integration**: 
+  * **NewsAPI** - To fetch real-time global gaming news.
+  * **RAWG API** - To retrieve comprehensive video game metadata, ratings, and covers.
 * **Libraries**: `requests` (API communication), `python-dotenv` (environment variables).
 
 ### Frontend
@@ -52,21 +54,22 @@ A full-stack gaming hub designed for enthusiasts to manage their personal collec
 ```
 game-tracker-v2/
 ├── backend/
-│   ├── api/
-│   │   └── external_news.py  # News API endpoints
-│   ├── services/
-│   │   └── news_service.py   # Multi-page fetching & anti-politics filtering
-│   └── main.py               # FastAPI entry point
-├── src/
-│   ├── pages/
-│   │   ├── News.jsx          # News hub logic & tag similarity engine
-│   │   ├── News.css          # Grid layout & stacking context fixes
-│   │   ├── Analytics.jsx     # Data visualization dashboard
-│   │   └── ...               # Browse, Library, Sessions, HomePage
-│   ├── components/
-│   │   └── Navbar.jsx        # Navigation & Branding
-│   └── App.jsx               # Client-side routing
-└── .env                      # API Keys and configuration
+│   ├── app/
+│   │   ├── routers/          # FastAPI route definitions (games, news, analytics)
+│   │   ├── services/         # Core business logic & external API integrations
+│   │   ├── schemas/          # Pydantic models for data validation
+│   │   ├── data/             # Local JSON databases (games.json, reviews.json)
+│   │   └── main.py           # FastAPI entry point & CORS configuration
+│   ├── requirements.txt
+│   └── .env                  # API Keys (Not included in repo)
+└── frontend/
+    ├── src/
+    │   ├── components/       # Reusable UI components (Navbar)
+    │   ├── pages/            # React views (Browse, GameDetails, News, etc.)
+    │   ├── styles/           # Global CSS and variables
+    │   ├── App.jsx           # Client-side routing configuration
+    │   └── main.jsx          # React DOM entry point
+    └── package.json
 ```
 ## Installation & Usage
 
@@ -80,7 +83,12 @@ game-tracker-v2/
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --reload
+
+# Create a .env file in the backend folder and add your keys:
+# NEWS_API_KEY=your_news_api_key_here
+# RAWG_API_KEY=your_rawg_api_key_here
+
+uvicorn app.main:app --reload
 ```
 
 ### 3. Frontend Setup
