@@ -8,6 +8,7 @@ import GameDetails from "./pages/GameDetails";
 import MyLibrary from "./pages/MyLibrary";
 import Analytics from "./pages/Analytics";
 import Sessions from "./pages/Sessions";
+import News from "./pages/News";
 
 export default function App() {
   return (
@@ -18,8 +19,9 @@ export default function App() {
         <Route path="/browse" element={<Browse />} />
         <Route path="/game/:id" element={<GameDetails />} />
         <Route path="/library" element={<MyLibrary />} />
-          <Route path="/sessions" element={<Sessions />} />
-          <Route path="/analytics" element={<Analytics />} />
+        <Route path="/sessions" element={<Sessions />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/news" element={<News />} />
       </Routes>
     </BrowserRouter>
   );
