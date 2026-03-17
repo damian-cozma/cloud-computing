@@ -17,7 +17,7 @@ def get_gaming_news():
         "domains": "ign.com,gamespot.com,polygon.com,pcgamer.com,eurogamer.net,videogameschronicle.com",
         "sortBy": "publishedAt",
         "language": "en",
-        "pageSize": 10,
+        "pageSize": 100,
         "apiKey": NEWS_API_KEY
     }
 
