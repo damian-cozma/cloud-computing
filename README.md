@@ -10,7 +10,8 @@ The assignments are **evolution-based**, starting from low-level implementations
 
 - Homework 1 → Custom backend using **vanilla Python**
 - Homework 2 → Full-stack app with **FastAPI + React**
-- Next → Deployment on **AWS, Google Cloud, Azure**
+- Homework 3 → Cloud-native full-stack application on Google Cloud Platform
+- Next → Deployment on **AWS, Azure**
 
 ---
 
