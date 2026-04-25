@@ -1,83 +1,126 @@
-import json
-from pathlib import Path
+from ..db.cosmos import sessions_container
 
-SESSIONS_FILE = Path(__file__).resolve().parent.parent / "data" / "sessions.json"
+
+def _to_api_session(session: dict) -> dict:
+    return {
+        **session,
+        "id": int(session["id"]),
+        "game_id": int(session["game_id"])
+    }
+
 
 def get_all_sessions():
-    try:
-        with open(SESSIONS_FILE, "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return []
+    sessions = list(sessions_container.read_all_items())
+
+    return [
+        _to_api_session(session)
+        for session in sessions
+    ]
+
 
 def get_sessions_for_game(game_id):
-    try:
-        with open(SESSIONS_FILE, "r") as f:
-            sessions = json.load(f)
-            return [s for s in sessions if s["game_id"] == game_id]
-    except FileNotFoundError:
-        return []
+    query = "SELECT * FROM c WHERE c.game_id = @game_id"
+    parameters = [
+        {"name": "@game_id", "value": str(game_id)}
+    ]
+
+    sessions = list(
+        sessions_container.query_items(
+            query=query,
+            parameters=parameters,
+            enable_cross_partition_query=True
+        )
+    )
+
+    return [
+        _to_api_session(session)
+        for session in sessions
+    ]
 
 
 def create_session(game_id, data):
-    try:
-        with open(SESSIONS_FILE, "r") as f:
-            sessions = json.load(f)
-    except FileNotFoundError:
-        sessions = []
+    sessions = get_all_sessions()
 
-    new_id = sessions[-1]["id"] + 1 if sessions else 1
+    if sessions:
+        current_id = max(session["id"] for session in sessions) + 1
+    else:
+        current_id = 1
+
     new_session = {
-        "id": new_id,
-        "game_id": game_id,
+        "id": str(current_id),
+        "game_id": str(game_id),
         "duration_minutes": data["duration_minutes"],
         "date": data["date"].isoformat()
     }
-    sessions.append(new_session)
-    with open(SESSIONS_FILE, "w") as f:
-        json.dump(sessions, f, indent=4)
-    return new_session
+
+    created_session = sessions_container.create_item(body=new_session)
+
+    return _to_api_session(created_session)
 
 
 def update_session(session_id, data):
-    try:
-        with open(SESSIONS_FILE, "r") as f:
-            sessions = json.load(f)
-    except FileNotFoundError:
+    query = "SELECT * FROM c WHERE c.id = @id"
+    parameters = [
+        {"name": "@id", "value": str(session_id)}
+    ]
+
+    sessions = list(
+        sessions_container.query_items(
+            query=query,
+            parameters=parameters,
+            enable_cross_partition_query=True
+        )
+    )
+
+    if not sessions:
         return None
 
-    for s in sessions:
-        if s["id"] == session_id:
-            s["duration_minutes"] = data["duration_minutes"]
-            s["date"] = data["date"].isoformat()
-            with open(SESSIONS_FILE, "w") as f:
-                json.dump(sessions, f, indent=4)
-            return s
-    return None
+    existing = sessions[0]
+
+    updated_session = {
+        "id": str(session_id),
+        "game_id": existing["game_id"],
+        "duration_minutes": data["duration_minutes"],
+        "date": data["date"].isoformat()
+    }
+
+    result = sessions_container.upsert_item(body=updated_session)
+
+    return _to_api_session(result)
+
 
 def delete_sessions_for_game(game_id):
-    try:
-        with open(SESSIONS_FILE, "r") as f:
-            sessions = json.load(f)
-    except FileNotFoundError:
-        return
+    sessions = get_sessions_for_game(game_id)
 
-    updated_sessions = [s for s in sessions if s["game_id"] != game_id]
+    for session in sessions:
+        sessions_container.delete_item(
+            item=str(session["id"]),
+            partition_key=str(game_id)
+        )
 
-    with open(SESSIONS_FILE, "w") as f:
-        json.dump(updated_sessions, f, indent=4)
 
 def delete_session(session_id):
-    try:
-        with open(SESSIONS_FILE, "r") as f:
-            sessions = json.load(f)
-    except FileNotFoundError:
+    query = "SELECT * FROM c WHERE c.id = @id"
+    parameters = [
+        {"name": "@id", "value": str(session_id)}
+    ]
+
+    sessions = list(
+        sessions_container.query_items(
+            query=query,
+            parameters=parameters,
+            enable_cross_partition_query=True
+        )
+    )
+
+    if not sessions:
         return False
 
-    initial_len = len(sessions)
-    sessions = [s for s in sessions if s["id"] != session_id]
-    if len(sessions) < initial_len:
-        with open(SESSIONS_FILE, "w") as f:
-            json.dump(sessions, f, indent=4)
-        return True
-    return False
+    existing = sessions[0]
+
+    sessions_container.delete_item(
+        item=str(session_id),
+        partition_key=existing["game_id"]
+    )
+
+    return True

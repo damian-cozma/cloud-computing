@@ -1,96 +1,120 @@
-import json
-from pathlib import Path
+from azure.cosmos.exceptions import CosmosResourceNotFoundError
+from ..db.cosmos import games_container
 from ..services.reviews_service import delete_review
 from ..services.sessions_service import delete_sessions_for_game
 
-GAMES_FILE = Path(__file__).resolve().parent.parent / "data" / "games.json"
+
+def _to_api_game(game: dict) -> dict:
+    return {
+        **game,
+        "id": int(game["id"])
+    }
+
 
 def get_all_games():
-    try:
-        with open(GAMES_FILE, "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return []
+    games = list(games_container.read_all_items())
+
+    return [
+        _to_api_game(game)
+        for game in games
+    ]
+
 
 def get_game_by_id(game_id):
-    games = get_all_games()
-    for game in games:
-        if game["id"] == game_id:
-            return game
-    return None
+    try:
+        game = games_container.read_item(
+            item=str(game_id),
+            partition_key=str(game_id)
+        )
+        return _to_api_game(game)
+    except CosmosResourceNotFoundError:
+        return None
+
 
 def create_game(game_data):
     if is_duplicate_game(game_data["title"], game_data["platform"]):
         return None
 
     games = get_all_games()
+
     if games:
-        last_game = games[-1]
-        current_id = last_game["id"] + 1
+        current_id = max(game["id"] for game in games) + 1
     else:
         current_id = 1
 
     new_game = {
-        "id": current_id,
-        **game_data
+        "id": str(current_id),
+        "title": game_data["title"],
+        "platform": game_data["platform"],
+        "progress": game_data["progress"],
+        "rawg_id": game_data.get("rawg_id")
     }
 
-    games.append(new_game)
+    created_game = games_container.create_item(body=new_game)
 
-    with open(GAMES_FILE, "w") as f:
-        json.dump(games, f, indent=4)
+    return _to_api_game(created_game)
 
-    return new_game
 
 def delete_game(game_id):
-    games = get_all_games()
-    updated_list = list(filter(lambda game: game["id"] != game_id, games))
+    existing_game = get_game_by_id(game_id)
 
-    if len(updated_list) == len(games):
+    if not existing_game:
         return False
 
     delete_review(game_id)
     delete_sessions_for_game(game_id)
 
-    with open(GAMES_FILE, "w") as f:
-        json.dump(updated_list, f, indent=4)
+    games_container.delete_item(
+        item=str(game_id),
+        partition_key=str(game_id)
+    )
 
     return True
 
+
 def update_game(game_id, game_data):
-    games = get_all_games()
+    existing_game = get_game_by_id(game_id)
 
-    for i, game in enumerate(games):
-        if game["id"] == game_id:
-            games[i] = {
-                "id": game_id,
-                **game_data
-            }
+    if not existing_game:
+        return None
 
-            with open(GAMES_FILE, "w") as f:
-                json.dump(games, f, indent=4)
+    updated_game = {
+        "id": str(game_id),
+        "title": game_data["title"],
+        "platform": game_data["platform"],
+        "progress": game_data["progress"],
+        "rawg_id": game_data.get("rawg_id")
+    }
 
-            return games[i]
+    result = games_container.upsert_item(body=updated_game)
 
-    return None
+    return _to_api_game(result)
+
 
 # ----------------- VALIDATION -----------------
 
 def is_duplicate_game(title, platform):
     games = get_all_games()
+
     for game in games:
-        if game["title"].lower() == title.lower() and game["platform"].lower() == platform.lower():
+        if (
+            game["title"].lower() == title.lower()
+            and game["platform"].lower() == platform.lower()
+        ):
             return True
 
     return False
+
 
 def is_duplicate_game_for_update(game_id: int, title: str, platform: str) -> bool:
     games = get_all_games()
 
     for game in games:
-        if game["id"] != game_id and \
-           game["title"].lower() == title.lower() and \
-           game["platform"].lower() == platform.lower():
+        if (
+            game["id"] != game_id
+            and game["title"].lower() == title.lower()
+            and game["platform"].lower() == platform.lower()
+        ):
             return True
 
     return False
