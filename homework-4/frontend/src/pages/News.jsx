@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./News.css";
+import { API_BASE } from "../api";
 
 const PAGE_SIZE = 6;
 
@@ -48,7 +49,7 @@ export default function News() {
       try {
         setLoading(true);
 
-        const response = await fetch("/api/news/");
+        const response = await fetch(`${API_BASE}/news/`);
         if (!response.ok) {
           throw new Error("Failed to fetch news");
         }

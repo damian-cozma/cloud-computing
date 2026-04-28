@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./MyLibrary.css";
+import { API_BASE } from "../api";
 
 const REVIEW_CATEGORIES = ["graphics", "mechanics", "story", "sound"];
 
@@ -39,8 +40,8 @@ export default function MyLibrary() {
       setError("");
 
       const [gamesRes, reviewsRes] = await Promise.all([
-        fetch("/api/games/"),
-        fetch("/api/reviews"),
+        fetch(`${API_BASE}/games/`),
+        fetch(`${API_BASE}/reviews`),
       ]);
 
       if (!gamesRes.ok) {
@@ -71,7 +72,7 @@ export default function MyLibrary() {
     if (!window.confirm("Are you sure you want to remove this game?")) return;
 
     try {
-      const response = await fetch(`/api/games/${id}`, { method: "DELETE" });
+      const response = await fetch(`${API_BASE}/games/${id}`, { method: "DELETE" });
 
       if (!response.ok) {
         throw new Error("Failed to delete game.");
@@ -93,7 +94,7 @@ export default function MyLibrary() {
         rawg_id: game.rawg_id,
       };
 
-      const response = await fetch(`/api/games/${game.id}`, {
+      const response = await fetch(`${API_BASE}/games/${game.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedData),
@@ -120,7 +121,7 @@ export default function MyLibrary() {
     setReviewMsg(null);
 
     try {
-      const res = await fetch(`/api/games/${game.id}/review`);
+      const res = await fetch(`${API_BASE}/games/${game.id}/review`);
 
       if (res.ok) {
         const data = await res.json();
@@ -171,7 +172,7 @@ export default function MyLibrary() {
     const method = isUpdating ? "PUT" : "POST";
 
     try {
-      const res = await fetch(`/api/games/${reviewModal.game.id}/review`, {
+      const res = await fetch(`${API_BASE}/games/${reviewModal.game.id}/review`, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(reviewForm),
@@ -200,7 +201,7 @@ export default function MyLibrary() {
     if (!window.confirm("Are you sure you want to delete this review?")) return;
 
     try {
-      const res = await fetch(`/api/games/${reviewModal.game.id}/review`, {
+      const res = await fetch(`${API_BASE}/games/${reviewModal.game.id}/review`, {
         method: "DELETE",
       });
 

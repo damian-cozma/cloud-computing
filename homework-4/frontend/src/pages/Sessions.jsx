@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./Sessions.css";
+import { API_BASE } from "../api";
 
 function formatDate(dateString) {
   if (!dateString) return "Unknown date";
@@ -37,7 +38,7 @@ export default function Sessions() {
   useEffect(() => {
     const fetchGames = async () => {
       try {
-        const res = await fetch("/api/games/");
+        const res = await fetch(`${API_BASE}/games/`);
         if (res.ok) {
           const data = await res.json();
           setGames(Array.isArray(data) ? data : []);
@@ -58,7 +59,7 @@ export default function Sessions() {
     resetForm();
 
     try {
-      const res = await fetch(`/api/games/${game.id}/sessions`);
+      const res = await fetch(`${API_BASE}/games/${game.id}/sessions`);
       if (res.ok) {
         const data = await res.json();
         data.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -78,7 +79,7 @@ export default function Sessions() {
 
     try {
       if (editingSessionId) {
-        const res = await fetch(`/api/sessions/${editingSessionId}`, {
+        const res = await fetch(`${API_BASE}/sessions/${editingSessionId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(sessionForm),
@@ -95,7 +96,7 @@ export default function Sessions() {
             .sort((a, b) => new Date(b.date) - new Date(a.date))
         );
       } else {
-        const res = await fetch(`/api/games/${selectedGame.id}/sessions`, {
+        const res = await fetch(`${API_BASE}/games/${selectedGame.id}/sessions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(sessionForm),
@@ -119,7 +120,7 @@ export default function Sessions() {
     if (!window.confirm("Delete this session?")) return;
 
     try {
-      const res = await fetch(`/api/sessions/${sessionId}`, {
+      const res = await fetch(`${API_BASE}/sessions/${sessionId}`, {
         method: "DELETE",
       });
 

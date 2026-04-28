@@ -1,6 +1,6 @@
 from azure.cosmos.exceptions import CosmosResourceNotFoundError
 from ..db.cosmos import reviews_container
-
+from .event_publisher import publish_event
 
 def _to_api_review(review: dict) -> dict:
     return {
@@ -64,6 +64,18 @@ def create_review(game_id, review_data):
     }
 
     created_review = reviews_container.create_item(body=new_review)
+
+    try:
+        publish_event(
+            "review.created",
+            {
+                "review_id": current_id,
+                "game_id": game_id,
+                "rating": average_score
+            }
+        )
+    except Exception as e:
+        print(f"Failed to publish event: {e}")
 
     return _to_api_review(created_review)
 

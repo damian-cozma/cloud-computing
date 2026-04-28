@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from app.routers import external_news, external_games, games, reviews, analytics, sessions
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -6,15 +6,19 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 @app.get("/")
 def read_root():
-    return {"message": "FastAPI works!"}
+    return {"message": "FastAPI works!!!! :D"}
+
+@app.get("/api/test/404")
+def not_found():
+    raise HTTPException(status_code=404, detail="Test 404")
 
 app.include_router(games.router, prefix="/api")
 app.include_router(reviews.router, prefix="/api")

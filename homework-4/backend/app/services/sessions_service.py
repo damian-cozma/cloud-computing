@@ -1,5 +1,5 @@
 from ..db.cosmos import sessions_container
-
+from .event_publisher import publish_event
 
 def _to_api_session(session: dict) -> dict:
     return {
@@ -54,6 +54,18 @@ def create_session(game_id, data):
     }
 
     created_session = sessions_container.create_item(body=new_session)
+
+    try:
+        publish_event(
+            "session.created",
+            {
+                "session_id": current_id,
+                "game_id": game_id,
+                "duration_minutes": data["duration_minutes"]
+            }
+        )
+    except Exception as e:
+        print(f"Failed to publish event: {e}")
 
     return _to_api_session(created_session)
 

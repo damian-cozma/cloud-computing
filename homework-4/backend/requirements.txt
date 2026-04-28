@@ -4,3 +4,5 @@ requests==2.31.0
 python-dotenv==1.0.0
 azure-cosmos==4.7.0
 gunicorn==21.2.0
+azure-servicebus==7.12.1
+gunicorn

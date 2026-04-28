@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./Analytics.css";
+import { API_BASE } from "../api";
 
 function formatHours(value) {
   if (value == null || Number.isNaN(Number(value))) return "0 h";
@@ -28,13 +29,13 @@ export default function Analytics() {
         setLoading(true);
         setError("");
 
-        let leaderboardUrl = `/api/analytics/leaderboard?sort=${sortOrder}`;
+        let leaderboardUrl = `${API_BASE}/analytics/leaderboard?sort=${sortOrder}`;
         if (platformFilter !== "All") {
           leaderboardUrl += `&platform=${encodeURIComponent(platformFilter)}`;
         }
 
         const [statsRes, leaderboardRes] = await Promise.all([
-          fetch("/api/analytics/statistics"),
+          fetch(`${API_BASE}/analytics/statistics`),
           fetch(leaderboardUrl),
         ]);
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import "./Browse.css";
+import { API_BASE } from "../api";
 
 function formatReleaseDate(dateString) {
   if (!dateString) return "TBA";
@@ -33,7 +34,7 @@ export default function Browse() {
 
     try {
       const response = await fetch(
-        `/api/external/games/search?q=${encodeURIComponent(trimmedQuery)}`
+        `${API_BASE}/external/games/search?q=${encodeURIComponent(trimmedQuery)}`
       );
 
       if (!response.ok) {

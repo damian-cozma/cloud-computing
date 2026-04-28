@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import "./GameDetails.css";
+import { API_BASE } from "../api";
 
 function formatDate(dateString) {
   if (!dateString) return "TBA";
@@ -41,7 +42,7 @@ export default function GameDetails() {
         setHeroImageFailed(false);
         setCoverImageFailed(false);
 
-        const response = await fetch(`/api/external/games/${id}`);
+        const response = await fetch(`${API_BASE}/external/games/${id}`);
 
         if (!response.ok) {
           if (response.status === 404) {
@@ -92,7 +93,7 @@ export default function GameDetails() {
     };
 
     try {
-      const response = await fetch("/api/games/", {
+      const response = await fetch(`${API_BASE}/games/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
